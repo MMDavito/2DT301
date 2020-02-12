@@ -1,0 +1,23 @@
+<h1>{{ title}}</h1>
+
+<input id="enter" type="text">
+<input type="button" value="Enter name" onclick="displayUserName()">
+<br>
+<br>
+<div id="name"><ul></ul></div>
+
+<script>
+    var names = [];
+
+
+function displayUserName()
+{
+  var theName = document.getElementById("enter").value;
+  if (theName == "" || theName.length == 0)
+  {
+     return false; //stop the function since the value is empty.
+  }
+  names.push(theName);
+  document.getElementById("name").children[0].innerHTML += "<li>"+names[names.length-1]+"</li>";
+}
+</script>

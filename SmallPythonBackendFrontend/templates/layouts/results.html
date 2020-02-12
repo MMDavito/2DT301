@@ -1,0 +1,12 @@
+{% extends "layouts/base.html" %}
+{% block title %}{{title}}{% endblock %}
+{% block head %}
+  {{ super() }}
+{% endblock %}
+{% block content %}
+<div class="row text-center">
+  <h1>Results</h1>
+  <textarea  alt="Text Placeholder" height="500">{{(data)}}</textarea>
+  <li id="myItemList"></li>
+</div>
+{% endblock %}

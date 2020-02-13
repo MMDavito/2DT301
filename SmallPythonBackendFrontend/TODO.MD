@@ -18,3 +18,5 @@ Kanske läser från "Guestbook.txt" istället för en lista på servern.
 Men måste lägga statiskt (ip.this) till min javascript från python
 Vilket inte borde vara så svårt (ipn står ju i commandline när man startar)
 **GLHF!**
+
+       window.location.href = "/results/"+resp["responseJSON"]["uuid"];  

@@ -20,3 +20,10 @@ Vilket inte borde vara så svårt (ipn står ju i commandline när man startar)
 **GLHF!**
 
        window.location.href = "/results/"+resp["responseJSON"]["uuid"];  
+
+Tomorrow friday the 2020-02-14:
+1. Read from request and print to file.
+2. Read from file and return as a list (print)
+3. Upload data ((timestamp),temp and moist) with datetime with CREDENTIALS = "bajsig_arduino"
+4. put this in another file.
+5. Return this data like the things from data/data.txt, but under results/arduino

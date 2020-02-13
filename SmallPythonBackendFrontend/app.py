@@ -30,19 +30,30 @@ def results():
                            title=title,
                            data=data)
 
+@app.route('/results/<fName>', methods=['GET'])
+def results_named(fName):#FileName
+    title = 'Result'
+    #data = get_file_content(fName)
+    data = get_file_content()
+
+    return render_template('layouts/results.html',
+                           title=title,
+                           data=data)
 
 
 @app.route('/postmethod', methods = ['POST'])
 def post_javascript_data():
     credentials = request.form["credentials"]
+    print("Credentials? ",credentials)
+    jsdata = request.form['data']
+    print("Data?: ",jsdata)
+
     if credentials != "BAJS":
         eCode = 401
         eMsg = "Not the correct credentials!"
         return errorsToResponse.getResponse(eMsg,eCode)
-    print("Credentials? ",credentials)
-    jsdata = request.form['data']
-    print("Data?: ",jsdata)
     filename = post_to_file(jsdata)
+    print("FILENAME: ",filename)
     params = { 'filename' : filename }
     return jsonify(params)
 
@@ -50,8 +61,9 @@ def post_javascript_data():
 def get_file_content():
     with open(datafile, "r") as myfile:
         print("FILE CONTENT: ",myfile.readlines)
+    return "Did you want something????"
 def post_to_file(jsdata):
     with open(datafile, "a") as myfile:
         myfile.write("text appended\n")
-    print(jsdata)
-    return "FAKE FUCKER!"
+    print("JSDATA: ",jsdata)
+    return "FAKE_FUCKER!"

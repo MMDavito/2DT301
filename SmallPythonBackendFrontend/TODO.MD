@@ -30,3 +30,5 @@ Tomorrow friday the 2020-02-14:
 
 **NOW BEFORE EATS:**
 Få upp skiten på din server och öppna port på lämpligt viss och sedan börja arbeta med arduino
+
+Will after lunch get arduino working over wifi!!!

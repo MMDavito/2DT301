@@ -31,6 +31,11 @@ def results():
     return render_template('layouts/results.html',
                            title=title,
                            data=data)
+@app.route('/arduino/', methods=['GET'])
+def arduino():
+    title = 'Arduino Result'
+    return render_template('layouts/arduino.html',
+                           title=title)
 
 @app.route('/results/<fName>', methods=['GET'])
 def results_named(fName):#FileName
@@ -58,6 +63,20 @@ def post_javascript_data():
     print("FILENAME: ",filename)
     params = { 'filename' : filename }
     return jsonify(params)
+@app.route('/shitty_human_data',methods=['GET'])
+def get_shitty_human_data():
+    print("ARDUINO FUCK YES!")
+    print("FORMBAJS: ",request.headers)
+    credentials = request.headers["Credentials"]
+    print("Credentials? ",credentials)
+
+    if credentials != "BAJS":
+        eCode = 401
+        eMsg = "Not the correct credentials!"
+        return errorsToResponse.getResponse(eMsg,eCode)
+    data = get_file_content()
+    print("DATA: ",data)
+    return successToResponse.getResponseWithData(data,200)
 
 @app.route('/arduino_data',methods=['GET'])
 def get_arduino_data():
@@ -70,7 +89,7 @@ def get_arduino_data():
         eCode = 401
         eMsg = "Not the correct credentials!"
         return errorsToResponse.getResponse(eMsg,eCode)
-    data = get_file_content()
+    data = get_arduiono_data_file()
     print("DATA: ",data)
     return successToResponse.getResponseWithData(data,200)
 @app.route('/arduino_data',methods=['POST'])

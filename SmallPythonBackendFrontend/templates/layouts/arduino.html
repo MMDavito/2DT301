@@ -6,19 +6,11 @@
 {% block content %}
 <div class="row text-center">
   <h1>{{title}}</h1>
-  <textarea  alt="Text Placeholder" height="500" id="TEXTFAN">{{(data)}}</textarea>
   <ul id="listfan"></ul>
 </div>
-<script>
-  var data = document.getElementById("TEXTFAN");
-  var data2 = document.getElementById("TEXTFAN").value;
-  console.log("Data 1: "+data);
-  console.log("Data 2: "+data2);
-
-  console.log(window.location.host)
-  
+<script>  
   $.ajax({
-    url:"/shitty_human_data",
+    url:"/arduino_data",
     type:'GET',
     dataType:'json',
     //headers:{"credentials":"BAJS"},

@@ -75,6 +75,7 @@ class successToResponse:
 
     def getResponse(code:int):
         temp_resp = Response(status=code)
+        return temp_resp
 
     def getResponseWithMessage(msg:str,code:int):
         """

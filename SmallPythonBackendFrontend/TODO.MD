@@ -27,3 +27,6 @@ Tomorrow friday the 2020-02-14:
 3. Upload data ((timestamp),temp and moist) with datetime with CREDENTIALS = "bajsig_arduino"
 4. put this in another file.
 5. Return this data like the things from data/data.txt, but under results/arduino
+
+**NOW BEFORE EATS:**
+Få upp skiten på din server och öppna port på lämpligt viss och sedan börja arbeta med arduino

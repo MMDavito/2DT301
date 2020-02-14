@@ -2,7 +2,7 @@ from __future__ import print_function
 from flask import Flask, render_template, make_response,Response
 from flask import redirect, request, jsonify, url_for
 import os
-from support.Response_Maker import errorsToResponse,successToResponse
+from support.Response_Maker import errorsToResponse,successToResponse, IS_DEBUG
 app = Flask(__name__)
 app.secret_key = 's3cr3t'
 app.debug = True
@@ -96,16 +96,15 @@ def get_arduino_data():
 def post_arduino_data():
     print("ARDUINO FUCK YES!")
     print("FORMBAJS: ",request.headers)
-    credentials = request.headers["Credentials"]
+    credentials = request.form["Credentials"]
     print("Credentials? ",credentials)
+    jsdata= request.form['data']
+    print("ARDUINO DATA: ",jsdata)
     
-    if credentials != "BAJS":
-        eCode = 401
-        eMsg = "Not the correct credentials!"
-        return errorsToResponse.getResponse(eMsg,eCode)
-    data = get_file_content()
-    print("DATA: ",data)
-    return successToResponse.getResponseWithData(data,200)
+    res = post_to_arduinofile(jsdata,credentials)
+    if IS_DEBUG:
+        print("RES BEFORE RESEND: ",res)
+    return res
 
 
 def get_file_content():
@@ -141,7 +140,12 @@ def post_to_arduinofile(jsdata,credentials):
             for i in range(1,fileLength):
                 myfile.write(lines[i])
             myfile.write(jsdata+"\n")
-    return "FAKE_FUCKER!"
+    sCode = 201
+    #msg = "Managed to post data!"
+    res = successToResponse.getResponse(sCode)
+    if IS_DEBUG:
+        print("RES_FUCK", res)
+    return res
 
 
 def post_to_file(jsdata):

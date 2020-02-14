@@ -17,7 +17,7 @@ $( document ).ready(function() {
      
      $.post( "/postmethod", {
        ///"canvas_data": JSON.stringify(outputData)
-       "credentials":credentials,
+       "Credentials":credentials,
        "data":inputTextArea
      }, function(resp){
        console.log("SUNOBITCH");

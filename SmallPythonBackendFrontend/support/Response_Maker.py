@@ -92,6 +92,9 @@ class successToResponse:
         print("HLLO FREIND")
         form = successToResponse.get_form("",data)
         temp_resp = Response((json.dumps(form)), status=code, mimetype='application/json')
+        print(form)
+        print("RESPONSEFAN: ")
+        print(temp_resp)
         return temp_resp
 
     def getResponseWithAll(msg:str,data:dict,code:int):

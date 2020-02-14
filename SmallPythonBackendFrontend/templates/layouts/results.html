@@ -6,7 +6,54 @@
 {% block content %}
 <div class="row text-center">
   <h1>Results</h1>
-  <textarea  alt="Text Placeholder" height="500">{{(data)}}</textarea>
-  <li id="myItemList"></li>
+  <textarea  alt="Text Placeholder" height="500" id="TEXTFAN">{{(data)}}</textarea>
+  <ul id="listfan"></ul>
 </div>
+<script>
+  var data = document.getElementById("TEXTFAN");
+  var data2 = document.getElementById("TEXTFAN").value;
+  console.log("Data 1: "+data);
+  console.log("Data 2: "+data2);
+
+  console.log(window.location.host)
+  
+  $.ajax({
+    url:"/arduino_data",
+    type:'GET',
+    dataType:'json',
+    //headers:{"credentials":"BAJS"},
+    //credentials:"BAJS",
+    beforeSend: function(request) {
+    request.setRequestHeader("credentials", "BAJS");
+    },
+
+    contentType: 'application/json; charset=utf-8',
+    success: function (result) {
+      console.log("RESULTATFAN: "+JSON.stringify(result));
+      console.log("Är detta data?: "+result["data"]);
+      var data = result["data"];
+      var li = document.getElementById("listfan");
+      data.forEach(element => {
+        var textNode = document.createTextNode(element);
+        var node = document.createElement("LI");
+        node.appendChild(textNode);
+        li.appendChild(node);
+
+      });
+               
+    },
+    error: function (request,status,error) {
+    console.log("request: "+request);  
+    console.log("status: "+status);  
+    console.log("ERROR: "+error);  
+    }
+  });
+
+
+  /*$.get("/arduino_data",{"credentials":"BAJS"},function(resp){
+    console.log("SUCCER: "+resp);
+  });*/
+  console.log("SUCCESS")
+
+</script>
 {% endblock %}

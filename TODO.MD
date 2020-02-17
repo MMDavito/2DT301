@@ -42,10 +42,11 @@ check via ssh ifconfig
 1. ping the raspberry
 2. Check if i can ping it from an external network (phone)
 If not, open the port untill you can do this and SSH over this external network.
-
-
-
-
+---------------------------------------------
+**TODAY: 2020-02-17**
+Efter lunch: Fixa en http request till min server.
+(först måste den öppnas och postman testa.)
+Sen skicka upp info, sen innan kväll: skicka upp temperatur och humidity
 
 
 

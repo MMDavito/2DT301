@@ -17,7 +17,7 @@ SoftwareSerial Serial1(6, 7);
 
 // Declare and initialise global arrays for WiFi settings
 char ssid[] = "KortVagigaPirater_24Meter";
-char pass[] = "";
+char pass[] = "Pirater on plankan 21";
 
 // Declare and initialise variable for radio status 
 int status = WL_IDLE_STATUS;

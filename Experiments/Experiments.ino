@@ -16,7 +16,57 @@
    Arduino\hardware\arduino\avr\libraries\SoftwareSerial\SoftwareSerial.h
 */
 
+#include <DHT.h>
+/*
+  I used this for pinouts: http://www.circuitbasics.com/how-to-set-up-the-dht11-humidity-sensor-on-an-arduino/
+  And this for code and library: https://github.com/adafruit/DHT-sensor-library
+
+*/
+//sdht DHT;
+
+#define DHT11_PIN 8
+#define DHTTYPE DHT11
+DHT dht(DHT11_PIN, DHTTYPE);
+
+class Temperature {
+public:
+  Temperature(){//SETUP:
+    dht.begin();
+  }
+
+/*
+ * Returns all info (timestamp,temperature,humdity,relativehumidity).
+*/
+String getTemperature(){
+
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();//Celcius
+  float f = dht.readTemperature(true);//Fahrenheight
+  if (isnan(h) || isnan(t) || isnan(f)) {
+    return (F("Failed to read from DHT sensor!"));
+  }
+
+  float hif = dht.computeHeatIndex(f, h);
+  float hic = dht.computeHeatIndex(t, h, false);
+
+  String retStr = (F("Temperature  = "));
+  retStr += (t);
+  retStr += (F("°C"));
+
+  retStr += (", Humidity  = ");
+  retStr += (h);
+
+  retStr += (F("%, Heat index: "));
+  retStr += (hic);
+  retStr += (F("°C "));
+  //delay(1000);
+  return retStr;
+  }
+};
+//END OF TEMPERATURE CLASS
+//START OF DATETIME:
 #include "NTPClient.h"
+#include <ArduinoHttpClient.h>
 #include "WiFiEsp.h"
 #include "WiFiEspUdp.h"
 
@@ -34,7 +84,11 @@ char pass[] = SECRET_PASS;
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
 
 char timeServer[] = "time.nist.gov";  // NTP server
+char serverAddress[] = "85.24.161.85";  // server address
+int port = 5000;
 
+WiFiEspClient wifi;
+HttpClient client = HttpClient(wifi, serverAddress, port);
 
 
 const long utcOffsetInSeconds = 3600;
@@ -42,7 +96,7 @@ char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursd
 // A UDP instance to let us send and receive packets over UDP
 WiFiEspUDP Udp;
 NTPClient timeClient(Udp, "pool.ntp.org", utcOffsetInSeconds);
-
+Temperature t1 = Temperature();
 
 void setup()
 {
@@ -73,22 +127,50 @@ void setup()
   
   //Udp.begin(localPort);
   timeClient.begin();
-
+  
 }
 
 void loop()
 {  timeClient.update();
+  String temp = t1.getTemperature();
   Serial.println("\n");
-  Serial.println(timeClient.getFormattedDate());
+  Serial.print(timeClient.getFormattedDate());
+  Serial.print("||");
+  Serial.print(temp);
   Serial.println("\n");
-  Serial.print(daysOfTheWeek[timeClient.getDay()]);
-  Serial.print(", ");
-  Serial.print(timeClient.getHours());
-  Serial.print(":");
-  Serial.print(timeClient.getMinutes());
-  Serial.print(":");
-  Serial.println(timeClient.getSeconds());
-  //Serial.println(timeClient.getFormattedTime());
+  String content = "Credentials=ARDUINO_BAJS&data=";
+  content += timeClient.getFormattedDate();
+  content += "||";
+  content += temp;
+  Serial.println("CONTENT:");
+  Serial.println(content);
+  
+  client.beginRequest();
+  Serial.println("Status before post:");
+  Serial.println(wifi.status());
+  client.post("/arduino_data");
 
-  delay(1000);
+  //client.post("/");
+  Serial.println("DID ERROR HAPPEN?");
+  Serial.println(wifi.status());
+  
+  client.sendHeader("Content-Type", "application/x-www-form-urlencoded");
+  client.sendHeader("Content-Length", content.length());
+  client.sendHeader("X-Custom-Header", "custom-header-value");
+  client.beginBody();
+  client.print(content);
+  client.endRequest();
+
+  // read the status code and body of the response
+  int statusCode = client.responseStatusCode();
+  //statusCode = client.responseStatusCode();
+  String response = client.responseBody();
+
+  Serial.print("Status code: ");
+  Serial.println(statusCode);
+  Serial.print("Response: ");
+  Serial.println(response);
+  
+  Serial.println("Wait ten seconds");
+  delay(10000);//10 seconds
 }

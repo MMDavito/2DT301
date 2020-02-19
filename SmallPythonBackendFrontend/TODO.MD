@@ -32,3 +32,11 @@ Tomorrow friday the 2020-02-14:
 Få upp skiten på din server och öppna port på lämpligt viss och sedan börja arbeta med arduino
 
 Will after lunch get arduino working over wifi!!!
+------------------------------------------------------------
+**2020-02-19**
+Will need to make the json work on arduino.
+But firstly need to make a temporary webpage that can change the data in the datafile.
+Then make the arduino to update 1 time per second(or more often). (parrallell? thread sleep?)
+
+When i later implement the database 1 time per minute would be good enough (button for imediate update on the arduino using TRIGGER INTERRUPT??)
+But firstly turn on and of led from webpage.

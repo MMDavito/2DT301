@@ -13,7 +13,7 @@ app.debug = True
 app._static_folder = os.path.abspath("templates/static/")
 
 api = Api(app)
-api.add_resource(RelayController,'/arduino_relays')
+api.add_resource(RelayController,'/arduino_relay')
 
 
 
@@ -46,6 +46,11 @@ def results():
 def arduino():
     title = 'Arduino Result'
     return render_template('layouts/arduino.html',
+                           title=title)
+@app.route('/relay_control/', methods=['GET'])
+def relay_control():
+    title = 'Relay Control'
+    return render_template('layouts/relay_control.html',
                            title=title)
 
 @app.route('/results/<fName>', methods=['GET'])

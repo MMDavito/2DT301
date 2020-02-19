@@ -11,8 +11,9 @@ class RelayService():
     @classmethod
     def getRelay(cls,api_key):
         data = cls.get_relays_datafile()
+        relays = {"relays":data}
         code = 200#OK
-        return successToResponse.getResponseWithData(data,code)
+        return successToResponse.getResponseWithData(relays,code)
         
     @classmethod
     def get_relays_datafile(cls):
@@ -23,4 +24,16 @@ class RelayService():
             lines = myfile.readlines()
             if IS_DEBUG:
                 print("relayFileContents: ",lines)
-        return lines
+                
+        listRelays = []
+        i=0
+        for line in lines:
+            if IS_DEBUG:
+                print("Line data on off?: ",line[-2])
+            isOn = True
+            if(line[-2]=="0"):
+                isOn=False
+            temp = Relay(i,isOn)
+            listRelays.append(temp.toDict())
+            i+=1
+        return listRelays

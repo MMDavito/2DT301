@@ -1,0 +1,69 @@
+{% extends "layouts/base.html" %}
+{% block title %}{{title}}{% endblock %}
+{% block head %}
+  {{ super() }}
+{% endblock %}
+{% block content %}
+<div class="row text-center">
+  <h1>{{title}}</h1>
+  <ul id="listfan"></ul>
+  <div id="DivForControl"></div>
+  <button type="button" class="btn btn-primary">Primary</button>
+  <button type="button" class="btn btn-danger">Danger</button>
+
+  <div id="bajs">
+      <button type="button" class="btn-danger btn-danger">bajsotto</button>
+  </div>
+</div>
+<script>  
+  $.ajax({
+    url:"/arduino_relay",
+    type:'GET',
+    dataType:'json',
+    //headers:{"credentials":"BAJS"},
+    //credentials:"BAJS",
+    beforeSend: function(request) {
+    request.setRequestHeader("x-api-key",1337);
+    request.setRequestHeader("Credentials", "BAJS");
+    },
+
+    contentType: 'application/json; charset=utf-8',
+    success: function (result) {
+      console.log("RESULTATFAN: "+JSON.stringify(result));
+      console.log("Är detta data?: "+result["data"]);
+      var data = result["data"]["relays"];
+      var li = document.getElementById("listfan");
+      var DivForControl = document.getElementById("DivForControl");
+      data.forEach(element => {
+        var textNode = document.createTextNode(JSON.stringify(element));
+        var node = document.createElement("LI");
+        node.appendChild(textNode);
+        li.appendChild(node);
+        
+        var button = document.createElement("input");
+        button.type = "button";
+        button.class = "btn btn-primary";
+        button.value = "im a button";
+        button.onclick = console.log("ASHOLE");
+
+        //var selectPanel = document.getElementById('selectpanel');
+        DivForControl.appendChild(button);
+
+      });
+               
+    },
+    error: function (request,status,error) {
+    console.log("request: "+request);  
+    console.log("status: "+status);  
+    console.log("ERROR: "+error);  
+    }
+  });
+
+
+  /*$.get("/arduino_data",{"credentials":"BAJS"},function(resp){
+    console.log("SUCCER: "+resp);
+  });*/
+  console.log("SUCCESS")
+
+</script>
+{% endblock %}

@@ -1,14 +1,25 @@
 from __future__ import print_function
 from flask import Flask, render_template, make_response,Response
 from flask import redirect, request, jsonify, url_for
+from flask_restful import Api
+
 import os
 from support.Response_Maker import errorsToResponse,successToResponse, IS_DEBUG
+from controller.relay_controller import RelayController
+
 app = Flask(__name__)
 app.secret_key = 's3cr3t'
 app.debug = True
 app._static_folder = os.path.abspath("templates/static/")
+
+api = Api(app)
+api.add_resource(RelayController,'/arduino_relays')
+
+
+
 datafile = "data/data.txt"
 arduino_datafile = "data/arduino_data.txt"
+relays_datafile = "data/relays.txt"
 fileLength = 10
 
 @app.route('/temp/', methods=['GET'])
@@ -92,6 +103,7 @@ def get_arduino_data():
     data = get_arduiono_data_file()
     print("DATA: ",data)
     return successToResponse.getResponseWithData(data,200)
+
 @app.route('/arduino_data',methods=['POST'])
 def post_arduino_data():
     print("ARDUINO FUCK YES!")
@@ -105,6 +117,7 @@ def post_arduino_data():
     if IS_DEBUG:
         print("RES BEFORE RESEND: ",res)
     return res
+
 
 
 def get_file_content():
@@ -149,7 +162,8 @@ def post_to_arduinofile(jsdata,credentials):
 
 
 def post_to_file(jsdata):
-    print("JSDATA: ",jsdata)
+    if IS_DEBUG:
+        print("JSDATA: ",jsdata)
     lines = get_file_content()
     if len(lines) < fileLength:
         with open(datafile, "a") as myfile:
@@ -160,3 +174,5 @@ def post_to_file(jsdata):
                 myfile.write(lines[i])
             myfile.write(jsdata+"\n")
     return "FAKE_FUCKER!"
+
+

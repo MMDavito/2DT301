@@ -7,15 +7,52 @@
 <div class="row text-center">
   <h1>{{title}}</h1>
   <ul id="listfan"></ul>
-  <div id="DivForControl"></div>
-  <button type="button" class="btn btn-primary">Primary</button>
-  <button type="button" class="btn btn-danger">Danger</button>
+    <div id="DivForControl">
 
-  <div id="bajs">
+    </div>
+    <div id="bajs">
       <button type="button" class="btn-danger btn-danger">bajsotto</button>
-  </div>
+    </div>
+    
+    <br/>
+    <br/>
+    <div id="FormBajs"></div>
+
+    <button type="button" class="btn btn-primary" onclick="clearSkit()">Clear</button>
+    <button type="button" class="btn btn-danger">Send</button>
+
+</div>
+
 </div>
 <script>  
+  function clearSkit(){
+    console.log("Will now clear");
+    var data = sessionStorage.getItem("relays");
+    //console.log("SHITTY DATA:\n"+data);
+    data = JSON.parse(data);
+    //console.log("SHITTiest DATA:\n"+JSON.stringify(data["data"]));
+    var relays = data["data"];
+    relays["relays"].forEach(relay => {
+      document.getElementById("isOff"+relay["id"]).checked=true;
+    })
+
+    /*//FOllowing is just incase of future javascript effort.
+    var divCont = document.getElementById("FormBajs");
+    if(!divCont.hasChildNodes()){
+      console.log("No children of div!");
+      return;
+    }
+    //ELSE:
+    var forms = divCont.children;
+    forms.forEach(form =>{
+      if(!form.hasChildNodes()) continue;
+      //ELSE:
+
+    });
+    */
+  }
+  
+  
   $.ajax({
     url:"/arduino_relay",
     type:'GET',
@@ -29,25 +66,66 @@
 
     contentType: 'application/json; charset=utf-8',
     success: function (result) {
+      sessionStorage.setItem("relays",JSON.stringify(result));
       console.log("RESULTATFAN: "+JSON.stringify(result));
       console.log("Är detta data?: "+result["data"]);
       var data = result["data"]["relays"];
+      //sessionStorage.setItem("relays",result["data"]);
+      
       var li = document.getElementById("listfan");
       var DivForControl = document.getElementById("DivForControl");
+      var FormBajs = document.getElementById("FormBajs");
       data.forEach(element => {
         var textNode = document.createTextNode(JSON.stringify(element));
         var node = document.createElement("LI");
         node.appendChild(textNode);
         li.appendChild(node);
         
-        var button = document.createElement("input");
-        button.type = "button";
-        button.class = "btn btn-primary";
-        button.value = "im a button";
-        button.onclick = console.log("ASHOLE");
+        //TODO: WIll try to make child of label id "ON" or "OFF".
+        var formDiv = document.createElement("div");
+        formDiv.id="form_relay_"+element["id"];
+        formDiv.classList.add("panel");
+        formDiv.classList.add("panel-default");
+        formDiv.classList.add("form-check");
+        //formDiv.innerHTML("<h1>Relay: "+data["id"]+"</h1>");
+        console.log("ID?: "+element["id"]);
+        var innerText = document.createTextNode("Relay "+ element["id"]+": ");
+        formDiv.appendChild(innerText);
+        var lineBreak = document.createElement("br");
+        formDiv.appendChild(lineBreak);
 
-        //var selectPanel = document.getElementById('selectpanel');
-        DivForControl.appendChild(button);
+        var labelON = document.createElement("label");
+        var radioON = document.createElement("input");
+        labelON.classList.add("form-check-label");
+        radioON.classList.add("form-check-input");
+
+        radioON.type = "radio";
+        radioON.name="yes_no_"+element["id"];
+        radioON.id="isOn"+element["id"];
+        radioON.value="isOn";
+        if(element["relay_is_on"]) console.log("Helvetes skit");
+        //radioON.checked = element["relay_is_on"];
+        //radioON.checked =true;
+
+        labelON.appendChild(radioON);
+        labelON.innerHTML+="ON";
+        formDiv.appendChild(labelON);
+
+        var labelOFF = document.createElement("label");
+        var radioOFF = document.createElement("input");
+        labelOFF.classList.add("form-check-label");
+        radioOFF.classList.add("form-check-input");
+        radioOFF.name="yes_no_"+element["id"];
+        radioOFF.type = "radio";
+        radioOFF.id="isOff"+element["id"];
+        radioOFF.value="isOff";
+        labelOFF.appendChild(radioOFF);
+        labelOFF.innerHTML+="OFF";
+        formDiv.appendChild(labelOFF);
+        
+        FormBajs.appendChild(formDiv);
+        document.getElementById("isOn"+element["id"]).checked=element["relay_is_on"];
+        document.getElementById("isOff"+element["id"]).checked=!element["relay_is_on"];
 
       });
                
@@ -58,12 +136,6 @@
     console.log("ERROR: "+error);  
     }
   });
-
-
-  /*$.get("/arduino_data",{"credentials":"BAJS"},function(resp){
-    console.log("SUCCER: "+resp);
-  });*/
-  console.log("SUCCESS")
 
 </script>
 {% endblock %}

@@ -1,4 +1,4 @@
-led0 : 0
+led0 : 1
 led1 : 0
-led2 : 1
+led2 : 0
 led3 : 0

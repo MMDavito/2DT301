@@ -47,4 +47,5 @@ class RelayController(Resource):
             print("Api key?: ",apiKey)
             print("Credentials?: ",credentials)
             print("WONDERFULL DATA?:\n",data)
+        service.postRelay(apiKey,data)
         return "MAGNIFIC"

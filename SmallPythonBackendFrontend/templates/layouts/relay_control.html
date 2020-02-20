@@ -19,7 +19,7 @@
     <div id="FormBajs"></div>
 
     <button type="button" class="btn btn-primary" onclick="clearSkit()">Clear</button>
-    <button type="button" class="btn btn-danger">Send</button>
+    <button type="button" class="btn btn-danger" onclick="sendSkit()">Send</button>
 
 </div>
 
@@ -50,6 +50,50 @@
 
     });
     */
+  }
+  function sendSkit(){
+    console.log("Will now SEND");
+    var data = sessionStorage.getItem("relays");
+    //console.log("SHITTY DATA:\n"+data);
+    data = JSON.parse(data);
+    //console.log("SHITTiest DATA:\n"+JSON.stringify(data["data"]));
+    var relays = data["data"];
+    var i = 0;
+    relays["relays"].forEach(relay => {
+      var isOn = false;
+      //console.log("Does this work?: "+"isOn"+relay["id"]);
+      //console.log("IS TEMPPPP?: "+temp);
+      if(document.getElementById("isOn"+relay["id"]).checked){
+        isOn=true;
+      }
+      console.log("ID: "+relay["id"]+ ", is on?: "+isOn);
+      relay["relay_is_on"] = isOn;
+
+      //relay["relay_is_on"] = document.getElementById("isON"+relay["id"]).checked;
+    })
+    console.log("Relays after:\n"+JSON.stringify(relays));
+    $.ajax({
+    url:"/arduino_relay",
+    type:'POST',
+    dataType:'json',
+    data: JSON.stringify(relays),
+    //headers:{"credentials":"BAJS"},
+    //credentials:"BAJS",
+    beforeSend: function(request) {
+    request.setRequestHeader("x-api-key",1337);
+    request.setRequestHeader("Credentials", "BAJS");
+    },
+
+    contentType: 'application/json; charset=utf-8',
+    success: function (result) {
+      console.log("RESULTATFAN EFTER: \n"+result)
+    },  
+    error: function (request,status,error) {
+    console.log("request: "+request);  
+    console.log("status: "+status);  
+    console.log("ERROR: "+error);  
+    }
+    });
   }
   
   

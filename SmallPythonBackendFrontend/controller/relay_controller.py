@@ -48,4 +48,6 @@ class RelayController(Resource):
             print("Credentials?: ",credentials)
             print("WONDERFULL DATA?:\n",data)
         service.postRelay(apiKey,data)
-        return "MAGNIFIC"
+        #res = service.postRelay(apiKey,data)
+        code = 202
+        return successToResponse.getResponseWithMessage("MAJESTIC",code)

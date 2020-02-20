@@ -50,19 +50,20 @@ class RelayService():
         #dataParsed =json.loads(data)
         #relays = json.loads(dataParsed["relays"])
         relays = (data["relays"])
-        print("RELAYS HEYBARBARIBA type: ",type(relays),", Value: ",relays)
+        if IS_DEBUG:
+            print("RELAYS HEYBARBARIBA type: ",type(relays),", Value: ",relays)
 
         for i in range(len(relays)):
             temp = Relay(**relays[i])
             relays[i] = temp
-            print("TEMP type: ",type(temp),", temp value: ",temp)
+            if IS_DEBUG:
+                print("TEMP type: ",type(temp),", temp value: ",temp)
 
         with open(fileName, "r") as myfile:
             lines = myfile.readlines()
             if IS_DEBUG:
                 print("relayFileContents: ",lines)
         
-        listRelays = []
         i=0
         for line in lines:
             index = line.find('d')+1
@@ -75,9 +76,11 @@ class RelayService():
         with open(fileName, "w") as myfile:
             for i in range(len(relays)):
                 isOn = 0
-                print("RELAY NUMBER: ",relays[i].id,", uses: "+str(relays[i].relay_is_on))
+                if IS_DEBUG:
+                    print("RELAY NUMBER: ",relays[i].id,", uses: "+str(relays[i].relay_is_on))
                 if relays[i].relay_is_on:
                     isOn = 1
                 myfile.write("led"+str(relays[i].id)+" : "+str(isOn))
                 myfile.write("\n")
-        return listRelays
+        
+        return data

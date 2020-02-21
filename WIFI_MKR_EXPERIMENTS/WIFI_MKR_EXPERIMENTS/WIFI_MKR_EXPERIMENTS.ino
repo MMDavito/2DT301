@@ -19,10 +19,19 @@
  by Tom Igoe
  */
 
+#define ARDUINOJSON_DECODE_UNICODE 1
 
 #include <SPI.h>
 #include <WiFiNINA.h>
 #include <ArduinoHttpClient.h>
+#include <ArduinoJson.h>
+//StaticJsonDocument<256> doc;//Earlier "jsonBuffer"
+DynamicJsonDocument doc(1024);
+
+int api_key = 1337;
+String credentials = "BAJS";
+
+
 
 #include "arduino_secrets.h"
 ///////please enter your sensitive data in the Secret tab/arduino_secrets.h
@@ -83,7 +92,7 @@ void setup() {
     Serial.println("connected to server");
     client.beginRequest();
     client.get("/arduino_data");
-    client.sendHeader("Credentials: BAJS");
+    client.sendHeader("Credentials: "+String(credentials));
     client.endRequest();
     // read the status code and body of the response
     int statusCode = client.responseStatusCode();
@@ -110,22 +119,147 @@ void setup() {
 void loop() {
   // if there are incoming bytes available
   // from the server, read them and print them:
-  while (client.available()) {
-    char c = client.read();
-    Serial.write(c);
+  //boolean shize = getRelayInfo(indexes,isOn);
+  boolean shize = changeRelays();
+  Serial.println("The boolean: "+shize);
+  Serial.println("Will now loop forever");
+  
+  // do nothing forevermore:
+  while (true);
   }
+//RETURN SIZE OR -1
+boolean changeRelays(){
+  //Could also print the information to EEPROM to allow for more secure things (useable turning on intervall on disconnect, but that is when i create that!)
+  //allows for up to 20 relays(no card have that many)
+  
+    
+   if (client.connect(server, port)) {
+    Serial.println("connected to server");
+    client.beginRequest();
+    client.get("/arduino_relay");
+    client.sendHeader("Credentials: "+String(credentials));
+    client.sendHeader("x-api-key: "+String(api_key));
+    client.endRequest();
+    // read the status code and body of the response
+    int statusCode = client.responseStatusCode();
+    //statusCode = client.responseStatusCode();
+    String response = client.responseBody();
 
-  // if the server's disconnected, stop the client:
-  if (!client.connected()) {
-    Serial.println();
-    Serial.println("disconnecting from server.");
-    client.stop();
+    Serial.print("Status code: ");
+    Serial.println(statusCode);
+    Serial.print("Response: ");
+    Serial.println(response);
+    
+  auto error = deserializeJson(doc, response);
+  
+  if(error) {
 
-    // do nothing forevermore:
-    while (true);
-  }
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.c_str());
+    return false;    
+  }//ELSE SUCCESS
+  String bajs = doc["data"]["relays"];
+  String skit = doc["data"]["relays"][2];
+  
+  Serial.println("DATA length:");
+  Serial.println(skit);
+  Serial.println("DATA?:");
+  Serial.println(bajs);
+  Serial.println("Will now print the array:");
+  Serial.println(String(sizeof(doc["data"]["relays"]) / sizeof(doc["data"]["relays"][0])));
+  Serial.println(String(sizeof(doc["data"]["relays"])));
+  Serial.println(String(sizeof(doc["data"]["relays"][0])));
+
+  byte size = 0;
+  for(byte i = 0; i < 20;i++){
+    Serial.println("I: "+String(i)+", gives:");
+    String skit = doc["data"]["relays"][i];
+    Serial.println(skit);
+    if(skit == "null"){
+      size = i - 1;
+      break;
+    }//ELSE IS VALID:    
+    int pin = doc["data"]["relays"][i]["id"];
+    pinMode(pin,OUTPUT);
+    if(doc["data"]["relays"][i]["relay_is_on"]){
+          digitalWrite(pin, HIGH);
+    }else digitalWrite(pin, LOW);
+    }
+   
+  }else{
+    Serial.println("FAIL AT CONNECTING");
+    return false;
+    }
+ return true;
 }
+/*
+//RETURN INFO
+byte getRelayInfo(int indexes[], boolean isOn[]){
+    
+   if (client.connect(server, port)) {
+    Serial.println("connected to server");
+    client.beginRequest();
+    client.get("/arduino_relay");
+    client.sendHeader("Credentials: "+String(credentials));
+    client.sendHeader("x-api-key: "+String(api_key));
+    client.endRequest();
+    // read the status code and body of the response
+    int statusCode = client.responseStatusCode();
+    //statusCode = client.responseStatusCode();
+    String response = client.responseBody();
 
+    Serial.print("Status code: ");
+    Serial.println(statusCode);
+    Serial.print("Response: ");
+    Serial.println(response);
+    
+  auto error = deserializeJson(doc, response);
+  
+  if(error) {
+
+    Serial.print(F("deserializeJson() failed: "));
+    Serial.println(error.c_str());
+    return -1;    
+  }//ELSE SUCCESS
+  String bajs = doc["data"]["relays"];
+  String skit = doc["data"]["relays"][2];
+  
+  Serial.println("DATA length:");
+  Serial.println(skit);
+  Serial.println("DATA?:");
+  Serial.println(bajs);
+  Serial.println("Will now print the array:");
+  Serial.println(String(sizeof(doc["data"]["relays"]) / sizeof(doc["data"]["relays"][0])));
+  Serial.println(String(sizeof(doc["data"]["relays"])));
+  Serial.println(String(sizeof(doc["data"]["relays"][0])));
+
+  byte size = 0;
+  for(byte i = 0; i < 20;i++){
+    Serial.println("I: "+String(i)+", gives:");
+    String skit = doc["data"]["relays"][i];
+    Serial.println(skit);
+    if(skit == "null"){
+      size = i - 1;
+      break;
+    }//ELSE VALID:
+    int pin = doc["data"]["relays"][i]["id"];
+    pinMode(pin,OUTPUT);
+    if(doc["data"]["relays"][i]["relay_is_on"]){
+          digitalWrite(pin, HIGH);
+    }else digitalWrite(pin, LOW);
+
+    
+    
+    }
+  return size;
+  
+  }else{
+    Serial.println("FAIL AT CONNECTING");
+    return -1;
+    }
+ return true;
+}
+*/
 
 void printWifiStatus() {
   // print the SSID of the network you're attached to:

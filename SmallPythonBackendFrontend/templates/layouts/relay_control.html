@@ -20,11 +20,30 @@
 
     <button type="button" class="btn btn-primary" onclick="clearSkit()">Clear</button>
     <button type="button" class="btn btn-danger" onclick="sendSkit()">Send</button>
+    <br/>
+    <time datetime="3m 30s">3:30 min</time>
+    <br/>
+
+    <form onsubmit="printBajs()">
+      <label for="hours">Hours</label>
+      <input id="hours" type="number" name="qty" min="0" max="10"/>	
+
+      <label for="minutes">Minutes</label>
+      <input id="minutes" type="number" name="qty" min="0" max="60"/>	
+      <label for="seconds">Seconds</label>
+      <input id="seconds" type="number" name="qty" min="0" max="60"/>	
+
+      <input type="submit" value="Submit">
+    </form>
+
 
 </div>
 
 </div>
-<script>  
+<script> 
+function printBajs(){
+  console.log("BAJS");;
+}
   function clearSkit(){
     console.log("Will now clear");
     var data = sessionStorage.getItem("relays");
@@ -166,13 +185,71 @@
         labelOFF.appendChild(radioOFF);
         labelOFF.innerHTML+="OFF";
         formDiv.appendChild(labelOFF);
+        var lineBreak = document.createElement("br");
+        formDiv.appendChild(lineBreak);
+
+        //Hours
+        var label = document.createElement("label");
+        var input = document.createElement("input");
+        label.innerHTML += "Hours: ";
+        label.classList.add("form-check-label");
+        input.classList.add("form-check-input");
+        input.id="hours_"+element["id"];
+        input.type="number";
+        input.name="hours"+element["id"];
+        input.min="0";
+        input.max="10";
+        label.appendChild(input);
+        formDiv.appendChild(label);
+        //Minutes
+        label = document.createElement("label");
+        input = document.createElement("input");
+        label.innerHTML += " Minutes: ";
+        label.classList.add("form-check-label");
+        input.classList.add("form-check-input");
+        input.id="minutes_"+element["id"];
+        input.type="number";
+        input.name="minutes"+element["id"];
+        input.min="0";
+        input.max="60";
+        label.appendChild(input);
+        formDiv.appendChild(label);
+        //Seconds
+        label = document.createElement("label");
+        input = document.createElement("input");
+        label.innerHTML += " Seconds: ";
+        label.classList.add("form-check-label");
+        input.classList.add("form-check-input");
+        input.id="seconds_"+element["id"];
+        input.type="number";
+        input.name="seconds"+element["id"];
+        input.min="0";
+        input.max="60";
+        label.appendChild(input);
+        formDiv.appendChild(label);
+        var lineBreak = document.createElement("br");
+
+        formDiv.appendChild(lineBreak);
+
         
+        
+        label = document.createElement("label");
+        input = document.createElement("input");
+        label.classList.add("form-check-label");
+        input.classList.add("form-check-input");
+        label.innerHTML += "Start time: ";
+        input.id="start_time_"+element["id"];
+        input.type="time";
+        input.step="1";
+        label.append(input);
+        formDiv.appendChild(label);
+
+
         FormBajs.appendChild(formDiv);
         document.getElementById("isOn"+element["id"]).checked=element["relay_is_on"];
         document.getElementById("isOff"+element["id"]).checked=!element["relay_is_on"];
-
-      });
-               
+        //formDiv.appendChild(lineBreak);
+        });       
     },
     error: function (request,status,error) {
     console.log("request: "+request);  

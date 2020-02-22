@@ -40,3 +40,5 @@ Then make the arduino to update 1 time per second(or more often). (parrallell? t
 
 When i later implement the database 1 time per minute would be good enough (button for imediate update on the arduino using TRIGGER INTERRUPT??)
 But firstly turn on and of led from webpage.
+------------------------------
+Add "get current time" for the arduino to get current time of day in millis for start of duration....

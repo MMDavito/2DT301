@@ -4,7 +4,7 @@ from flask import redirect, request, jsonify, url_for
 from flask_restful import Api
 
 import os
-from support.Response_Maker import errorsToResponse,successToResponse, IS_DEBUG
+from support.Response_Maker import errorsToResponse,successToResponse, IS_DEBUG,timeHelper
 from controller.relay_controller import RelayController
 
 app = Flask(__name__)
@@ -21,6 +21,17 @@ datafile = "data/data.txt"
 arduino_datafile = "data/arduino_data.txt"
 relays_datafile = "data/relays.txt"
 fileLength = 10
+@app.route('/time/', methods=['GET'])
+def time():
+    with_nanos = False
+    req = request.args.get("with_nanos")
+    if IS_DEBUG:
+        print("REQ?", req)
+    if not req is None:
+        if req == "true":
+            with_nanos=True
+    data = timeHelper.get_current_time(with_nanos)
+    return data
 
 @app.route('/temp/', methods=['GET'])
 def temp():

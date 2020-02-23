@@ -22,6 +22,14 @@ class timeHelper:
         if dT != None:
             dT = dT.strftime(format_datetime)#As I recall it arguments are copies unless self.somethingSomething
         return dT
+    def get_current_time(with_nano:bool):
+        time = datetime.utcnow().time()
+        if with_nano:
+            return str(time)
+        else:
+            time_form = "%H:%M:%S"
+            return time.strftime(time_form)
+
 
 """If I ever refactor this is good, but right now i need to create objects of them.
 class dictHelper:

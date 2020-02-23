@@ -32,14 +32,94 @@ function clearSkit() {
     })
 }
 function sendSkit() {
-    console.log("Will now SEND");
+    if (document.getElementById("noCheckProgram").checked) {
+        sendStatic();
+        return;
+    }//ELSE:   
+    sendDynamic();
+    return;
+}
+function sendDynamic(){
+    var hasStartTime = false;//TODO: set to true
+    var eachHasStartTime = false;
+    var miniDuration = 4000;//TODO MAKE 0!
+
+    console.log("Will now send using dynamic/programerfull info.");
+    var startTime = document.getElementById("start_time_0");
+    console.log("STARTIME: "+startTime.value.length);
+    if(startTime.value.length==0 || !hasStartTime){
+        console.log("No starttime will be allowed.");
+        hasStartTime = false;
+    }
+    else if (document.getElementById("yesCheck").checked){
+        //It allows for setting dates.
+        //TODO: change in the forEach so I set all nonExistant to the last exisisting, so they run in sequence...
+        console.log("NOT SUPPORTED #yesCheck will need to be implemented");
+        eachHasStartTime=false;        
+    }
+    
     var data = sessionStorage.getItem("relays");
     //console.log("SHITTY DATA:\n"+data);
     data = JSON.parse(data);
     //console.log("SHITTiest DATA:\n"+JSON.stringify(data["data"]));
-    var relays = data["data"];
+    var content = data["data"];
+    var relays = content["relays"];
+    content["is_dynamic"] = true;
+    //var relayInfos = [];//Info about/for the relays.
     var i = 0;
-    relays["relays"].forEach(relay => {
+    relays.forEach(relay => {
+        //var id = relay["id"];
+        //relay = {"id":id};
+
+        console.log("HEJJJJJ: "+JSON.stringify(relay));
+        var milliseconds = 0;
+        //console.log("seconds_"+relay["id"]);
+        var seconds = document.getElementById("seconds_"+relay["id"]).value;
+        console.log("SECONDS: "+seconds.length);
+        if (seconds.length==0){
+            seconds=0;
+        }
+        milliseconds += seconds*1000;
+        
+        var minutes = document.getElementById("minutes_"+relay["id"]).value;
+        if (minutes.length==0){
+            minutes=0;
+        }
+        milliseconds += minutes*60*1000;
+
+        var hours = document.getElementById("hours_"+relay["id"]).value;
+        if (hours.length==0){
+            hours=0;
+        }
+        milliseconds += hours*60*60*1000;
+        if (milliseconds == 0) milliseconds = miniDuration;
+        relay["duration"] = milliseconds;
+        console.log("RELAY AFTER: "+JSON.stringify(relay));
+        relays[i]=relay;
+        i++;
+    });
+    content["has_start_time"]=hasStartTime;
+    content["each_has_start_time"]=eachHasStartTime;
+
+
+    console.log("RELAYS AFTER: "+JSON.stringify(relays));
+    console.log("DATA AFTER: "+JSON.stringify(data));
+    console.log("Content AFTER: "+JSON.stringify(content));
+    sessionStorage.setItem("relays",JSON.stringify(data));
+}
+function sendStatic(){
+    console.log("Will now SEND using the static/ programerless info.");
+    var data = sessionStorage.getItem("relays");
+    //console.log("SHITTY DATA:\n"+data);
+    data = JSON.parse(data);
+    //console.log("SHITTiest DATA:\n"+JSON.stringify(data["data"]));
+    var relays = data["data"]["relays"];
+    data["data"] = {"relays":relays};
+    //relays = data["data"];
+    var i = 0;
+    relays.forEach(relay => {
+        var id = relay["id"];
+        relay = {"id":id};
         var isOn = false;
         //console.log("Does this work?: "+"isOn"+relay["id"]);
         //console.log("IS TEMPPPP?: "+temp);
@@ -48,15 +128,19 @@ function sendSkit() {
         }
         console.log("ID: " + relay["id"] + ", is on?: " + isOn);
         relay["relay_is_on"] = isOn;
-
+        relays[i]= relay;
+        i++;
         //relay["relay_is_on"] = document.getElementById("isON"+relay["id"]).checked;
     })
     console.log("Relays after:\n" + JSON.stringify(relays));
+    console.log("DATA after:\n" + JSON.stringify(data));
+    
+    sessionStorage.setItem("relays",JSON.stringify(data));
     $.ajax({
         url: "/arduino_relay",
         type: 'POST',
         dataType: 'json',
-        data: JSON.stringify(relays),
+        data: JSON.stringify(data["data"]),
         //headers:{"credentials":"BAJS"},
         //credentials:"BAJS",
         beforeSend: function (request) {
@@ -75,7 +159,6 @@ function sendSkit() {
         }
     });
 }
-
 
 $.ajax({
     url: "/arduino_relay",

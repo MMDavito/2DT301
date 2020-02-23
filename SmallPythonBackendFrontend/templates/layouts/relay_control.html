@@ -8,35 +8,40 @@
   <h1>{{title}}</h1>
   <ul id="listfan"></ul>
   <div id="DivForControl">
-    Do you want to set starttime individually?
-    Yes
-    <input type="radio" onclick="javascript:yesnoCheck();" name="yesno" id="yesCheck" />
-    No
-    <input type="radio" onclick="javascript:yesnoCheck();" name="yesno" id="noCheck" checked="true" />
-    <br />
-    <br />
     Do you want to program or controll static on/off?
-    <br/>
+    <br />
     Yes I want to program
-    <input type="radio" onclick="javascript:yesnoCheckProgram();" name="yesnoprogram" id="yesCheckProgram" checked="true"/>
-    <br/>
-    
+    <input type="radio" onclick="javascript:yesnoCheckProgram();" name="yesnoprogram" id="yesCheckProgram"
+      checked="true" />
+    <br />
     No I do not want to program
     <input type="radio" onclick="javascript:yesnoCheckProgram();" name="yesnoprogram" id="noCheckProgram" />
 
-  </div>
-  <div id="bajs">
-    <button type="button" class="btn-danger btn-danger">bajsotto</button>
+    <br />
+    <br />
+    <div class="dynamic_div">
+      Do you want to set starttime individually?
+      Yes
+      <input type="radio" onclick="javascript:yesnoCheck();" name="yesno" id="yesCheck" />
+      No
+      <input type="radio" onclick="javascript:yesnoCheck();" name="yesno" id="noCheck" checked="true" />
+    </div>
   </div>
 
   <br />
   <br />
 
   <div id="FormBajs"></div>
-
+  <div style="display: none;">
+  Reset will be used later, so that when you change settings, the relays will remember if it has already ran in the previous program/settings.
+  This require change in hardware to support.
+  But the current functionality is the one with reset checked.
+  Future implementetation will support a more reprogramable irrigation control, where you do not flood the irrigation of id = 0... 
+ 
   <input type="checkbox" id="reset" name="reset" value="reset" class="form-check-input">
   <label for="reset" class="form-check-label">Reset</label>
   <br>
+</div>
 
   <button type="button" class="btn btn-primary" onclick="clearSkit()">Clear</button>
   <button type="button" class="btn btn-danger" onclick="sendSkit()">Send</button>

@@ -49,6 +49,11 @@ class RelayService():
         """
         #dataParsed =json.loads(data)
         #relays = json.loads(dataParsed["relays"])
+        if "is_dynamic" in data and (not data["is_dynamic"] is None) and data["is_dynamic"] == True:
+            print("SHISEEEE")
+            eCode = 400
+            msg = "Bad request"
+            return errorsToResponse.getResponse(msg,eCode)
         relays = (data["relays"])
         if IS_DEBUG:
             print("RELAYS HEYBARBARIBA type: ",type(relays),", Value: ",relays)
@@ -82,5 +87,6 @@ class RelayService():
                     isOn = 1
                 myfile.write("led"+str(relays[i].id)+" : "+str(isOn))
                 myfile.write("\n")
-        
-        return data
+        code = 202
+        msg = "majestetic"
+        return successToResponse.getResponseWithMessage(msg,code)

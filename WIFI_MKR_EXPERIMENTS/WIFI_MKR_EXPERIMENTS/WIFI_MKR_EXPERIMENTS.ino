@@ -197,7 +197,7 @@ boolean changeRelays(){
       int pin = doc["data"]["relays"][i]["id"];
       if(pin<0 || pin> NUM_DIGITAL_PINS){
         String eMsg = "Pin: "+String(pin)+" does not exist. Pin must be between 0 and "+String(NUM_DIGITAL_PINS-1);
-        sendErrorMessage(eMsg);
+        sendErrorMessage(eMsg);//then just keep going....
       }
       Serial.println("Before pin"+String(pin)+" is initilized: ");
       Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.

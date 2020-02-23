@@ -42,7 +42,7 @@ function sendSkit() {
 function sendDynamic(){
     var hasStartTime = false;//TODO: set to true
     var eachHasStartTime = false;
-    var miniDuration = 4000;//TODO MAKE 0!
+    var defaultSeconds = 4;//TODO MAKE 0!
 
     console.log("Will now send using dynamic/programerfull info.");
     var startTime = document.getElementById("start_time_0");
@@ -77,7 +77,7 @@ function sendDynamic(){
         var seconds = document.getElementById("seconds_"+relay["id"]).value;
         console.log("SECONDS: "+seconds.length);
         if (seconds.length==0){
-            seconds=0;
+            seconds=defaultSeconds;
         }
         milliseconds += seconds*1000;
         
@@ -92,7 +92,7 @@ function sendDynamic(){
             hours=0;
         }
         milliseconds += hours*60*60*1000;
-        if (milliseconds == 0) milliseconds = miniDuration;
+        //if (milliseconds == 0) milliseconds = miniDuration;
         relay["duration"] = milliseconds;
         console.log("RELAY AFTER: "+JSON.stringify(relay));
         relays[i]=relay;

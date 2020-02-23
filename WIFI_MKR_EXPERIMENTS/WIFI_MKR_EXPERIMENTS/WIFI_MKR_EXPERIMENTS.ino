@@ -23,13 +23,14 @@
 
 #include <SPI.h>
 #include <WiFiNINA.h>
-#include <ArduinoHttpClient.h>
+#include <ArduinoHttpClient.h> 
 #include <ArduinoJson.h>
 //StaticJsonDocument<256> doc;//Earlier "jsonBuffer"
 DynamicJsonDocument doc(1024);
 
 int api_key = 1337;
 String credentials = "BAJS";
+int num_pins = NUM_DIGITAL_PINS;
 
 
 
@@ -56,10 +57,12 @@ HttpClient client = HttpClient(wifi, server, port);
 
 void setup() {
   //Initialize serial and wait for port to open:
+
   Serial.begin(9600);
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
+  Serial.println(NUM_DIGITAL_PINS);
 
   // check for the WiFi module:
   if (WiFi.status() == WL_NO_MODULE) {
@@ -160,123 +163,73 @@ boolean changeRelays(){
     Serial.print("Response: ");
     Serial.println(response);
     
-  auto error = deserializeJson(doc, response);
+    auto error = deserializeJson(doc, response);
   
-  if(error) {
+    if(error) {
 
-    Serial.print(F("deserializeJson() failed: "));
-    Serial.println(error.c_str());
-    return false;    
-  }//ELSE SUCCESS
-  String bajs = doc["data"]["relays"];
-  String skit = doc["data"]["relays"][2];
+      Serial.print(F("deserializeJson() failed: "));
+      Serial.println(error.c_str());
+      String eMsg = "deserializeJson() failed";
+      sendErrorMessage(eMsg);
+      return false;    
+    }//ELSE SUCCESS
+    String bajs = doc["data"]["relays"];
+    String skit = doc["data"]["relays"][2];
   
-  Serial.println("DATA length:");
-  Serial.println(skit);
-  Serial.println("DATA?:");
-  Serial.println(bajs);
-  Serial.println("Will now print the array:");
-  Serial.println(String(sizeof(doc["data"]["relays"]) / sizeof(doc["data"]["relays"][0])));
-  Serial.println(String(sizeof(doc["data"]["relays"])));
-  Serial.println(String(sizeof(doc["data"]["relays"][0])));
-
-  byte size = 0;
-  for(byte i = 0; i < 20;i++){
-    Serial.println("I: "+String(i)+", gives:");
-    String skit = doc["data"]["relays"][i];
+    Serial.println("DATA length:");
     Serial.println(skit);
-    if(skit == "null"){
-      size = i - 1;
-      break;
-    }//ELSE IS VALID:    
-    int pin = doc["data"]["relays"][i]["id"];
-    Serial.println("Before pin"+String(pin)+" is initilized: ");
-    Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.
+    Serial.println("DATA?:");
+    Serial.println(bajs);
+    Serial.println("Will now print the array:");
+    Serial.println(String(sizeof(doc["data"]["relays"]) / sizeof(doc["data"]["relays"][0])));
+    Serial.println(String(sizeof(doc["data"]["relays"])));
+    Serial.println(String(sizeof(doc["data"]["relays"][0])));
 
-    pinMode(pin,OUTPUT);
-    if(doc["data"]["relays"][i]["relay_is_on"]){
-          digitalWrite(pin, HIGH);
-    }else{ digitalWrite(pin, LOW);}
+    byte size = 0;
+    for(byte i = 0; i < 20;i++){
+      Serial.println("I: "+String(i)+", gives:");
+      String skit = doc["data"]["relays"][i];
+      Serial.println(skit);
+      if(skit == "null"){
+        size = i - 1;
+        break;
+      }//ELSE IS VALID:    
+      int pin = doc["data"]["relays"][i]["id"];
+      if(pin<0 || pin> NUM_DIGITAL_PINS){
+        String eMsg = "Pin: "+String(pin)+" does not exist. Pin must be between 0 and "+String(NUM_DIGITAL_PINS-1);
+        sendErrorMessage(eMsg);
+      }
+      Serial.println("Before pin"+String(pin)+" is initilized: ");
+      Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.
+
+      pinMode(pin,OUTPUT);
+      if(doc["data"]["relays"][i]["relay_is_on"]){
+        digitalWrite(pin, HIGH);
+      }else{ digitalWrite(pin, LOW);}
     
-    Serial.println("After pin"+String(pin)+" is initilized: ");
-        Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.
+      Serial.println("After pin"+String(pin)+" is initilized: ");
+      Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.
 
+      }
+    }else{
+      Serial.println("FAIL AT CONNECTING");
+      return false;
     }
-  }else{
-    Serial.println("FAIL AT CONNECTING");
-    return false;
-    }
- return true;
-}
-/*
-//RETURN INFO
-byte getRelayInfo(int indexes[], boolean isOn[]){
-    
-   if (client.connect(server, port)) {
-    Serial.println("connected to server");
-    client.beginRequest();
-    client.get("/arduino_relay");
-    client.sendHeader("Credentials: "+String(credentials));
-    client.sendHeader("x-api-key: "+String(api_key));
-    client.endRequest();
-    // read the status code and body of the response
-    int statusCode = client.responseStatusCode();
-    //statusCode = client.responseStatusCode();
-    String response = client.responseBody();
+  return true;
+  }
 
-    Serial.print("Status code: ");
-    Serial.println(statusCode);
-    Serial.print("Response: ");
-    Serial.println(response);
-    
-  auto error = deserializeJson(doc, response);
-  
-  if(error) {
-
-    Serial.print(F("deserializeJson() failed: "));
-    Serial.println(error.c_str());
-    return -1;    
-  }//ELSE SUCCESS
-  String bajs = doc["data"]["relays"];
-  String skit = doc["data"]["relays"][2];
-  
-  Serial.println("DATA length:");
-  Serial.println(skit);
-  Serial.println("DATA?:");
-  Serial.println(bajs);
-  Serial.println("Will now print the array:");
-  Serial.println(String(sizeof(doc["data"]["relays"]) / sizeof(doc["data"]["relays"][0])));
-  Serial.println(String(sizeof(doc["data"]["relays"])));
-  Serial.println(String(sizeof(doc["data"]["relays"][0])));
-
-  byte size = 0;
-  for(byte i = 0; i < 20;i++){
-    Serial.println("I: "+String(i)+", gives:");
-    String skit = doc["data"]["relays"][i];
-    Serial.println(skit);
-    if(skit == "null"){
-      size = i - 1;
-      break;
-    }//ELSE VALID:
-    int pin = doc["data"]["relays"][i]["id"];
-    pinMode(pin,OUTPUT);
-    if(doc["data"]["relays"][i]["relay_is_on"]){
-          digitalWrite(pin, HIGH);
-    }else digitalWrite(pin, LOW);
-
-    
-    
-    }
-  return size;
-  
-  }else{
-    Serial.println("FAIL AT CONNECTING");
-    return -1;
-    }
- return true;
-}
-*/
-
+void sendErrorMessage(String msg){
+    String content = "Credentials=ARDUINO_BAJS&data=";
+    content+=msg;
+    client.post("/arduino_data");
+      
+  client.sendHeader("Content-Type", "application/x-www-form-urlencoded");
+  client.sendHeader("Content-Length", content.length());
+  client.sendHeader("X-Custom-Header", "custom-header-value");
+  client.beginBody();
+  client.print(content);
+  client.endRequest();
+  }
 void printWifiStatus() {
   // print the SSID of the network you're attached to:
   Serial.print("SSID: ");

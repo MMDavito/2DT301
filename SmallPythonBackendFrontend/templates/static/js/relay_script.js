@@ -1,25 +1,21 @@
 console.log("HURAY FOR ME!");
+yesnoCheckProgram
 
+function yesnoCheckProgram() {
+    if (document.getElementById("noCheckProgram").checked) {
+        $(".static_div").show();
+        $(".dynamic_div").hide();
+    } else {
+        $(".static_div").hide();
+        $(".dynamic_div").show();
+    }
+}
 function yesnoCheck() {
     if (document.getElementById("noCheck").checked) {
         $(".div_start_time").hide();
     } else {
         $(".div_start_time").show();
     }
-    /*
-    var divStartTime = document.getElementsByClassName("div_start_time");
-    console.log("Length?: "+divStartTime.length);
-  
-    for(var i = 0; i<divStartTime.length;i++){
-      var element = divStartTime[i];
-      if(document.getElementById("noCheck").checked){
-        //element.style.display="none";
-        element.style.visibility="hidden";
-      }else{
-        element.style.display="visible";
-      }
-    }*/
-
 }
 function printBajs() {
     console.log("BAJS");;
@@ -34,21 +30,6 @@ function clearSkit() {
     relays["relays"].forEach(relay => {
         document.getElementById("isOff" + relay["id"]).checked = true;
     })
-
-    /*//FOllowing is just incase of future javascript effort.
-    var divCont = document.getElementById("FormBajs");
-    if(!divCont.hasChildNodes()){
-      console.log("No children of div!");
-      return;
-    }
-    //ELSE:
-    var forms = divCont.children;
-    forms.forEach(form =>{
-      if(!form.hasChildNodes()) continue;
-      //ELSE:
- 
-    });
-    */
 }
 function sendSkit() {
     console.log("Will now SEND");
@@ -116,7 +97,6 @@ $.ajax({
         //sessionStorage.setItem("relays",result["data"]);
 
         var li = document.getElementById("listfan");
-        var DivForControl = document.getElementById("DivForControl");
         var FormBajs = document.getElementById("FormBajs");
         var i = 0;
         data.forEach(element => {
@@ -126,6 +106,10 @@ $.ajax({
             li.appendChild(node);
 
             //TODO: WIll try to make child of label id "ON" or "OFF".
+            var formStatic = document.createElement("div");
+            formStatic.classList.add("static_div");
+            var formDynamic = document.createElement("div");
+            formDynamic.classList.add("dynamic_div");
             var formDiv = document.createElement("div");
             formDiv.id = "form_relay_" + element["id"];
             formDiv.classList.add("panel");
@@ -153,7 +137,7 @@ $.ajax({
 
             labelON.appendChild(radioON);
             labelON.innerHTML += "ON";
-            formDiv.appendChild(labelON);
+            formStatic.appendChild(labelON);
 
             var labelOFF = document.createElement("label");
             var radioOFF = document.createElement("input");
@@ -165,10 +149,14 @@ $.ajax({
             radioOFF.value = "isOff";
             labelOFF.appendChild(radioOFF);
             labelOFF.innerHTML += "OFF";
-            formDiv.appendChild(labelOFF);
+            formStatic.appendChild(labelOFF);
             var lineBreak = document.createElement("br");
-            formDiv.appendChild(lineBreak);
+            formStatic.appendChild(lineBreak);
 
+            var textNode = document.createTextNode("Duration: ");
+            var lineBreak = document.createElement("br");
+            formDynamic.appendChild(textNode);
+            formDynamic.appendChild(lineBreak);
             //Hours
             var label = document.createElement("label");
             var input = document.createElement("input");
@@ -181,7 +169,7 @@ $.ajax({
             input.min = "0";
             input.max = "10";
             label.appendChild(input);
-            formDiv.appendChild(label);
+            formDynamic.appendChild(label);
             //Minutes
             label = document.createElement("label");
             input = document.createElement("input");
@@ -194,7 +182,7 @@ $.ajax({
             input.min = "0";
             input.max = "60";
             label.appendChild(input);
-            formDiv.appendChild(label);
+            formDynamic.appendChild(label);
             //Seconds
             label = document.createElement("label");
             input = document.createElement("input");
@@ -207,10 +195,10 @@ $.ajax({
             input.min = "0";
             input.max = "60";
             label.appendChild(input);
-            formDiv.appendChild(label);
+            formDynamic.appendChild(label);
             var lineBreak = document.createElement("br");
 
-            formDiv.appendChild(lineBreak);
+            formDynamic.appendChild(lineBreak);
 
 
             label = document.createElement("label");
@@ -224,14 +212,12 @@ $.ajax({
             label.append(input);
             if (i != 0) {
                 var divStartTime = document.createElement("div");
-                //divStartTime.className="div_start_time";
                 divStartTime.classList.add("div_start_time");
-                //formDiv.appendChild(divStartTime);
                 divStartTime.appendChild(label);
-                formDiv.appendChild(divStartTime);
+                formDynamic.appendChild(divStartTime);
             }
             else {
-                formDiv.appendChild(label);
+                formDynamic.appendChild(label);
             }
 
             label = document.createElement("label");
@@ -249,10 +235,11 @@ $.ajax({
 
             if (i == 0) {
                 var lineBreak = document.createElement("br");
-                formDiv.appendChild(lineBreak);
+                formDynamic.appendChild(lineBreak);
             }
-            formDiv.appendChild(label);
-
+            formDynamic.appendChild(label);
+            formDiv.appendChild(formStatic);
+            formDiv.appendChild(formDynamic)
             FormBajs.appendChild(formDiv);
             document.getElementById("isOn" + element["id"]).checked = element["relay_is_on"];
             document.getElementById("isOff" + element["id"]).checked = !element["relay_is_on"];
@@ -264,6 +251,16 @@ $.ajax({
             //divStartTime.style.display="none";
             //divStartTime.style.visibility="hidden";
             $(".div_start_time").hide();
+        }else{
+            $(".div_start_time").show();
+        }
+        
+        if (document.getElementById("noCheckProgram").checked){
+            $(".static_div").show();
+            $(".dynamic_div").hide();
+        }else{
+            $(".static_div").hide();
+            $(".dynamic_div").show();
         }
     },
     error: function (request, status, error) {

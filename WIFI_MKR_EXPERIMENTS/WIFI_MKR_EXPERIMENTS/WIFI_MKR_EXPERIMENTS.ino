@@ -74,6 +74,9 @@ void setup() {
   }
 
   // attempt to connect to Wifi network:
+  Serial.print("Attempting to connect to SSID: ");
+  status = WiFi.begin(ssid, pass);
+  delay(2000);
   while (status != WL_CONNECTED) {
     Serial.print("Attempting to connect to SSID: ");
     Serial.println(ssid);
@@ -81,7 +84,7 @@ void setup() {
     status = WiFi.begin(ssid, pass);
 
     // wait 10 seconds for connection:
-    delay(10000);
+    delay(2000);
   }
   Serial.println("Connected to wifi");
   printWifiStatus();
@@ -120,13 +123,20 @@ void loop() {
   // if there are incoming bytes available
   // from the server, read them and print them:
   //boolean shize = getRelayInfo(indexes,isOn);
+/*
+  for(int i = 0; i<4;i++){
+      boolean shize = changeRelays();
+      Serial.println("The boolean: "+shize);
+      delay(4000);
+  }
+*/
+  Serial.println("Will now loop forever");
+  // do nothing forevermore:
+  //while (true);
   boolean shize = changeRelays();
   Serial.println("The boolean: "+shize);
-  Serial.println("Will now loop forever");
-  
-  // do nothing forevermore:
-  while (true);
-  }
+  delay(1000);
+}
 //RETURN SIZE OR -1
 boolean changeRelays(){
   //Could also print the information to EEPROM to allow for more secure things (useable turning on intervall on disconnect, but that is when i create that!)
@@ -180,12 +190,18 @@ boolean changeRelays(){
       break;
     }//ELSE IS VALID:    
     int pin = doc["data"]["relays"][i]["id"];
+    Serial.println("Before pin"+String(pin)+" is initilized: ");
+    Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.
+
     pinMode(pin,OUTPUT);
     if(doc["data"]["relays"][i]["relay_is_on"]){
           digitalWrite(pin, HIGH);
-    }else digitalWrite(pin, LOW);
+    }else{ digitalWrite(pin, LOW);}
+    
+    Serial.println("After pin"+String(pin)+" is initilized: ");
+        Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.
+
     }
-   
   }else{
     Serial.println("FAIL AT CONNECTING");
     return false;

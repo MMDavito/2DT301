@@ -32,6 +32,15 @@ int api_key = 1337;
 String credentials = "BAJS";
 int num_pins = NUM_DIGITAL_PINS;
 
+boolean isDynamic = false;
+boolean hasStartTime = false;
+ 
+long startTimes [NUM_DIGITAL_PINS];
+long durations [NUM_DIGITAL_PINS];
+boolean activeArr [NUM_DIGITAL_PINS];
+boolean isOnArr [NUM_DIGITAL_PINS];
+
+
 
 
 #include "arduino_secrets.h"

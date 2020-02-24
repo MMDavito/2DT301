@@ -62,8 +62,11 @@ function sendDynamic(){
     //console.log("SHITTY DATA:\n"+data);
     data = JSON.parse(data);
     //console.log("SHITTiest DATA:\n"+JSON.stringify(data["data"]));
+    
     var content = data["data"];
     var relays = content["relays"];
+    //var relays = relays;
+    content ={"is_dynamic":true};
     content["is_dynamic"] = true;
     //var relayInfos = [];//Info about/for the relays.
     var i = 0;
@@ -100,6 +103,8 @@ function sendDynamic(){
     });
     content["has_start_time"]=hasStartTime;
     content["each_has_start_time"]=eachHasStartTime;
+    content["relays"]=relays;
+    data["data"]=content;
 
 
     console.log("RELAYS AFTER: "+JSON.stringify(relays));

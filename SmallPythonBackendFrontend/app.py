@@ -5,6 +5,7 @@ from flask_restful import Api
 
 import os
 from support.Response_Maker import errorsToResponse,successToResponse, IS_DEBUG,timeHelper
+from support.CREDENTIALS import CREDENTIALS, API_KEY
 from controller.relay_controller import RelayController
 
 app = Flask(__name__)
@@ -82,7 +83,7 @@ def post_javascript_data():
     jsdata = request.form['data']
     print("Data?: ",jsdata)
 
-    if credentials != "BAJS":
+    if credentials != CREDENTIALS:
         eCode = 401
         eMsg = "Not the correct credentials!"
         return errorsToResponse.getResponse(eMsg,eCode)
@@ -97,7 +98,7 @@ def get_shitty_human_data():
     credentials = request.headers["Credentials"]
     print("Credentials? ",credentials)
 
-    if credentials != "BAJS":
+    if credentials != CREDENTIALS:
         eCode = 401
         eMsg = "Not the correct credentials!"
         return errorsToResponse.getResponse(eMsg,eCode)
@@ -112,7 +113,7 @@ def get_arduino_data():
     credentials = request.headers["Credentials"]
     print("Credentials? ",credentials)
 
-    if credentials != "BAJS":
+    if credentials != CREDENTIALS:
         eCode = 401
         eMsg = "Not the correct credentials!"
         return errorsToResponse.getResponse(eMsg,eCode)

@@ -1,92 +1,169 @@
 from flask import Response, json
 #from support.connection_factory import Connection
-from support.Response_Maker import IS_DEBUG, errorsToResponse,successToResponse
-from domain.relay import Relay
+from support.Response_Maker import IS_DEBUG, errorsToResponse, successToResponse
+from domain.relay import Relay, RelayDynamic
 import mysql.connector
 from mysql.connector import errorcode
 
 fileName = "data/relays.txt"
 
+
 class RelayService():
     @classmethod
-    def getRelay(cls,api_key):
-        data = cls.get_relays_datafile()
-        relays = {"relays":data}
-        code = 200#OK
-        return successToResponse.getResponseWithData(relays,code)
-   
+    def getRelays(cls, api_key,isArduino):
+        data = cls.get_relays_datafile(isArduino)
+        #relays = {"relays": data}
+        code = 200  # OK
+        return successToResponse.getResponseWithData(data, code)
+
     @classmethod
-    def get_relays_datafile(cls):
+    def get_relays_datafile(cls,isArduino:bool):
         """
         Returns list of data (line by line) from the datafile.
         """
+        if isArduino != True:#Could be any shit
+            isArduino = False
         with open(fileName, "r") as myfile:
             lines = myfile.readlines()
             if IS_DEBUG:
-                print("relayFileContents: ",lines)
-                
+                print("relayFileContents: ", lines)
+
         listRelays = []
-        i=0
-        for line in lines:
+        for i in range(0,3):
+            if IS_DEBUG:
+                print("line: ",i,", gives: ",lines[i])
+        dyn=int(lines[0][-2])
+        sT=int(lines[1][-2])
+        eST=int(lines[2][-2])
+        is_dynamic = False
+        hasStartTime = False
+        eachHasStartTime = False
+        if dyn == 1:
+            is_dynamic = True
+            if sT == 1:
+                hasStartTime = True
+            if eST == 1:
+                eachHasStartTime = True
+        
+        if IS_DEBUG:
+            print("DYN=",dyn,", ST=",sT,", EST=",eST)
+        for i in range(3,len(lines)):
+            line = lines[i]
             index = line.find('d')+1
             indexEnd = line.find(':')-1
             if IS_DEBUG:
-                print("Line data on off?: ",line[-2])
+                print("Line data on off?: ", line[-2])
             isOn = True
-            if(line[-2]=="0"):
-                isOn=False
-            temp = Relay(line[index:indexEnd],isOn)
-            listRelays.append(temp.toDict())
-            i+=1
-        return listRelays
+            if(line[-2] == "0"):
+                isOn = False
+            if is_dynamic:
+                subString = line[indexEnd+3:]
+                tempStart = subString.find(':')+2
+                tempEnd = subString.find(',')
+                duration = int(subString[tempStart:tempEnd])#Int is same as arduino long.
+                temp = RelayDynamic(line[index:indexEnd],isOn,duration)
+                if isArduino:
+                    listRelays.append(temp.toDictNoBOOOOL())
+                else:
+                    listRelays.append(temp.toDict())
+            else:
+                temp = Relay(line[index:indexEnd], isOn)#IF IS DYN!!!!!!
+                listRelays.append(temp.toDict())
+        
+        resp = {
+            "is_dynamic":is_dynamic,
+            "has_start_time":hasStartTime,
+            "each_has_start_time":eachHasStartTime,
+            "relays":listRelays
+        } 
+        return resp
+
     @classmethod
-    def postRelay(cls,api_key,data):
+    def postRelay(cls, api_key, data):
         return cls.postRelayToFile(data)
+
     @classmethod
-    def postRelayToFile(cls,data):
+    def postRelayToFile(cls, data):
         """
         Prints/replaces information in file....
         """
         #dataParsed =json.loads(data)
         #relays = json.loads(dataParsed["relays"])
+
+        is_dynamic = False
+        hasStartTime = False
+        eachHasStartTime = False
+
         if "is_dynamic" in data and (not data["is_dynamic"] is None) and data["is_dynamic"] == True:
+            """
             print("SHISEEEE")
             eCode = 400
             msg = "Bad request"
-            return errorsToResponse.getResponse(msg,eCode)
+            return errorsToResponse.getResponse(msg, eCode)
+            """
+            if IS_DEBUG:
+                print("Will this work??, Lets find out!!")
+            is_dynamic=True
+            if "has_start_time" in data and (not data["has_start_time"] is None) and data["has_start_time"] == True:
+                hasStartTime = True
+            if "each_has_start_time" in data and (not data["each_has_start_time"] is None) and data["each_has_start_time"] == True:
+                eachHasStartTime = True
+
+
         relays = (data["relays"])
         if IS_DEBUG:
-            print("RELAYS HEYBARBARIBA type: ",type(relays),", Value: ",relays)
+            print("RELAYS HEYBARBARIBA type: ",
+                  type(relays), ", Value: ", relays)
 
         for i in range(len(relays)):
-            temp = Relay(**relays[i])
+            if is_dynamic:
+                temp = RelayDynamic(**relays[i])
+            else:
+                temp = Relay(**relays[i])
             relays[i] = temp
             if IS_DEBUG:
-                print("TEMP type: ",type(temp),", temp value: ",temp)
+                print("TEMP type: ", type(temp), ", temp value: ", temp)
 
+        """
         with open(fileName, "r") as myfile:
             lines = myfile.readlines()
             if IS_DEBUG:
-                print("relayFileContents: ",lines)
-        
-        i=0
+                print("relayFileContents: ", lines)
+        i = 0
         for line in lines:
             index = line.find('d')+1
             indexEnd = line.find(':')-1
             if IS_DEBUG:
-                print("Relay index from file?: ", index,", and its value: ",line[index:indexEnd])
-            i+=1
-
+                print("Relay index from file?: ", index,
+                      ", and its value: ", line[index:indexEnd])
+            i += 1
+        """
         i = 0
+
+        dyn = 0  # DYNAMIC
+        sT = 0  # StartTimes
+        eST = 0  # eachStartTimes
+        if is_dynamic:
+            dyn = 1
+            if hasStartTime:
+                sT = 1
+            if eachHasStartTime:
+                eST = 1
+
         with open(fileName, "w") as myfile:
+            myfile.write("dyn : "+str(dyn))
+            myfile.write("\n")
+            myfile.write("sT : "+str(sT))
+            myfile.write("\n")
+            myfile.write("eST : "+str(eST))
+            myfile.write("\n")
             for i in range(len(relays)):
-                isOn = 0
                 if IS_DEBUG:
-                    print("RELAY NUMBER: ",relays[i].id,", uses: "+str(relays[i].relay_is_on))
-                if relays[i].relay_is_on:
-                    isOn = 1
-                myfile.write("led"+str(relays[i].id)+" : "+str(isOn))
+                    print("RELAY NUMBER: ",
+                          relays[i].id, ", uses: "+str(relays[i].relay_is_on))
+
+                myfile.write(relays[i].toString())
                 myfile.write("\n")
         code = 202
         msg = "majestetic"
-        return successToResponse.getResponseWithMessage(msg,code)
+        return successToResponse.getResponseWithMessage(msg, code)

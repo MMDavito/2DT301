@@ -17,6 +17,9 @@
   by dlf (Metodo2 srl)
   modified 31 May 2012
   by Tom Igoe
+
+  fubared xx February 2020
+  by David Carlsson.
 */
 
 #define ARDUINOJSON_DECODE_UNICODE 1
@@ -41,13 +44,34 @@ boolean eachHasStartTime = false;
 //boolean activeArr [NUM_DIGITAL_PINS];
 //boolean isOnArr [NUM_DIGITAL_PINS];
 
-int numRelays = 4;
-byte indexes[numRelays];
-long startTimes [numRelays];
-long durations [numRelays];
+//Variables for static and dynamic:
+const int numRelays = 4;//SPENT 2 hours with realising arrays needs constants to know on compile time.FUCK U
+byte pinIds       [numRelays];//Can be -1?? if not used??
 boolean activeArr [numRelays];
-boolean isOnArr [numRelays];
 
+//Variables for dynamic:
+long durations    [numRelays];
+long startTimes   [numRelays];//For millis....
+long startTimesTmp[numRelays];
+byte repeatsArr   [numRelays];
+
+
+//Variables for static:
+boolean isOnArr   [numRelays];
+/*
+  byte pinIds[numRelays]={};//Can be -1?? if not used??
+  boolean activeArr[numRelays]={};
+
+  //Variables for dynamic:
+  long startTimes[numRelays]={};
+  long durations[numRelays]={};
+  long startTimes[numRelays]={};//For millis....
+  byte repeatsArr[numRelays]={};
+
+
+  //Variables for static:
+  boolean isOnArr[numRelays]={};
+*/
 
 
 
@@ -94,9 +118,9 @@ void setup() {
   }
 
   // attempt to connect to Wifi network:
-  Serial.print("Attempting to connect to SSID: ");
-  status = WiFi.begin(ssid, pass);
-  delay(2000);
+  //Serial.print("Attempting to connect to SSID: ");
+  //status = WiFi.begin(ssid, pass);
+  //delay(2000);
   while (status != WL_CONNECTED) {
     Serial.print("Attempting to connect to SSID: ");
     Serial.println(ssid);
@@ -104,7 +128,7 @@ void setup() {
     status = WiFi.begin(ssid, pass);
 
     // wait 10 seconds for connection:
-    delay(2000);
+    delay(10000);
   }
   Serial.println("Connected to wifi");
   printWifiStatus();
@@ -150,36 +174,79 @@ void loop() {
         delay(4000);
     }
   */
-  Serial.println("Will now loop forever");
+  Serial.println("Will now http forever");
   // do nothing forevermore:
   //while (true);
   if (isDynamic) {
-    boolean shize = Relays_Dynamic();
+    Relays_Dynamic();
+    boolean shize = loopDynamic();
+    Serial.println("WTF!!!!!!!!!!!!!");
     if (!shize) {
       Serial.println("LOOP FOREVER");
       while (true) {}
       Serial.println("The boolean: " + shize);
       if (isDynamic) delay(1000);
-    } else {
-      boolean shize = Relays_Static();
-      Serial.println("The boolean: " + shize);
-      if (!shize) {
-        Serial.println("LOOP FOREVER");
-        while (true) {}
-      }
-      if (!isDynamic) delay(1000);
     }
+  } else {
+    boolean shize = Relays_Static();
+    Serial.println("The boolean: " + shize);
+    if (!shize) {
+      Serial.println("LOOP FOREVER");
+      while (true) {}
+    }
+    if (!isDynamic) delay(1000);
   }
-  boolean loopDynamic() {
-    boolean shize = Relays_Dynamic();
-    if (isDynamic) delay(1000);
-    else return true;
-    if(!shize) return false;
-    
+}
+boolean loopDynamic() {
+  for(int i = 0;i<numRelays;i++){
+    pinMode(pinIds[i],OUTPUT);
+    digitalWrite(pinIds[i],LOW);
+    }
+  
+  byte i = 0;
+  startTimesTmp[i] = millis();
+  while (true) {
+    Serial.println("LOOPING");
+
+    if (!isDynamic) return true;
+    //if (!shize) return false;
+    //Start of program:
+      pinMode(pinIds[i], OUTPUT);
+      Serial.println("I: " + String(i) + ", gives duration: " + String(durations[i]));
+      Serial.println("I: " + String(i) + ", gives start: " + String(startTimesTmp[i]));
+      Serial.println("I: " + String(i) + ", gives runtime: " + String((millis() - startTimesTmp[i])));
+
+      if ((millis() - startTimesTmp[i]) < durations[i]) {
+        digitalWrite(pinIds[i], HIGH);
+      } else {//Not initlized or duration overflow
+        digitalWrite(pinIds[i], LOW);
+        if (i >= (numRelays - 1)) {
+            startTimesTmp[0] = millis();
+            i=0;
+            continue;//jump to while
+          //i = numRelays;
+        } else{ 
+          Serial.println("i+1 is: "+String(i+1));
+          startTimesTmp[i + 1] = millis();
+          Serial.println("With value: "+String(startTimesTmp[i+1]));
+          i++; 
+          continue;//jump to while.
+        }
+      }
+    delay(1000); //Should replace/refactor this logic of halting execution.....
+    boolean shize = Relays_Dynamic();//TODO UNCOMMENT
+
+    //But i dont have any listeners, except maybe should have a button for "axeServerForUpdate"
+  }
+}
+void resetStartTimes() {
+  for (byte i = 0; i < numRelays; i++) {
+    startTimesTmp[i] = 0;
   }
 }
 
 boolean Relays_Dynamic() {
+  Serial.println("Will http for dynamic.");
   //Could also print the information to EEPROM to allow for more secure things (useable turning on intervall on disconnect, but that is when i create that!)
   //allows for up to 20 relays(no card have that many)
 
@@ -190,7 +257,7 @@ boolean Relays_Dynamic() {
     client.get("/arduino_relay");
     client.sendHeader("Credentials: " + String(credentials));
     client.sendHeader("x-api-key: " + String(api_key));
-    client.sendHeader("is_arduino: " + true));
+    client.sendHeader("is_arduino: " + (true));
     client.endRequest();
     // read the status code and body of the response
     int statusCode = client.responseStatusCode();
@@ -207,7 +274,7 @@ boolean Relays_Dynamic() {
 
     if (error) {
 
-    Serial.print(F("deserializeJson() failed: "));
+      Serial.print(F("deserializeJson() failed: "));
       Serial.println(error.c_str());
       String eMsg = "deserializeJson() failed";
       sendErrorMessage(eMsg);
@@ -215,14 +282,15 @@ boolean Relays_Dynamic() {
     }//ELSE SUCCESS
     if (!doc["data"]["is_dynamic"]) {
       isDynamic = false;
-      return false;//MAYBE RETURN TRUE????TODO
-    }
-    if(doc["data"]["has_start_time"]){
+      return true;//MAYBE RETURN TRUE????TODO
+    } //Why this comes after return is reason it needs to be initilized first time
+    //Switching from static to dynamic.
+    if (doc["data"]["has_start_time"]) {
       hasStartTime = true;
-      }else hasStartTime = false;
-    if(doc["data"]["each_has_start_time"]){
-      eachHasStartTime=true;
-      }else eachHasStartTime = false;
+    } else hasStartTime = false;
+    if (doc["data"]["each_has_start_time"]) {
+      eachHasStartTime = true;
+    } else eachHasStartTime = false;
     String bajs = doc["data"]["relays"];
     String skit = doc["data"]["relays"][2];
 
@@ -237,11 +305,11 @@ boolean Relays_Dynamic() {
 
     byte size = 0;
     for (byte i = 0; i < 20; i++) {
-    Serial.println("I: " + String(i) + ", gives:");
+      Serial.println("I: " + String(i) + ", gives:");
       String skit = doc["data"]["relays"][i];
       Serial.println(skit);
       if (skit == "null" || i >= numRelays) {
-        if (i >= numRelays) {
+        if (skit != "null" && i >= numRelays) {
           String msg = "Can only use: " + String(numRelays) + ", num of relays";
           sendErrorMessage(msg);
         }
@@ -252,20 +320,18 @@ boolean Relays_Dynamic() {
       if (pin < 0 || pin > NUM_DIGITAL_PINS) {
         String eMsg = "Pin: " + String(pin) + " does not exist. Pin must be between 0 and " + String(NUM_DIGITAL_PINS - 1);
         sendErrorMessage(eMsg);//then just keep going....
+        return false;
       }
-      Serial.println("Before pin" + String(pin) + " is initilized: ");
-      Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.
-
-      pinMode(pin, OUTPUT);
-      if (doc["data"]["relays"][i]["relay_is_on"]) {//TODO FORTSÄTT här för att ändra booleans och durations i global variables.
-        digitalWrite(pin, HIGH);
-      } else {
-        digitalWrite(pin, LOW);
-      }
-
-      Serial.println("After pin" + String(pin) + " is initilized: ");
-      Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.
-
+      pinIds[i] = pin;
+      //TODO UNCOMMENT FOLLOWING!
+      //startTimes[i]=doc["data"]["start_time"];//IF EACH HAS NOT STARTTIME IT IS i==0 or nada!
+      //TODO CONTINUE
+      durations[i]  = doc["data"]["relays"][i]["duration"];
+      Serial.println("HERE IS MY DURATION::::: " + String(durations[i]));
+      String temp = doc["data"]["relays"][i]["duration"];
+      Serial.println("HERE IS MY DURATION2:::::" + temp);
+      //repeatsArr[i] = doc["data"]["relays"][i]["repeats"];
+      //isActiveArr[i = doc["data"]["relays"][i]["is_active"];//From frontend??
     }
   } else {
     Serial.println("FAIL AT CONNECTING");
@@ -278,6 +344,7 @@ boolean Relays_Dynamic() {
    This sets and changes relays acording to relays..
 */
 boolean Relays_Static() {
+  Serial.println("Will http for static");
   //Could also print the information to EEPROM to allow for more secure things (useable turning on intervall on disconnect, but that is when i create that!)
   //allows for up to 20 relays(no card have that many)
 
@@ -288,7 +355,7 @@ boolean Relays_Static() {
     client.get("/arduino_relay");
     client.sendHeader("Credentials: " + String(credentials));
     client.sendHeader("x-api-key: " + String(api_key));
-    client.sendHeader("is_arduino: " + true));
+    client.sendHeader("is_arduino: " + (true));
     client.endRequest();
     // read the status code and body of the response
     int statusCode = client.responseStatusCode();
@@ -305,7 +372,7 @@ boolean Relays_Static() {
 
     if (error) {
 
-    Serial.print(F("deserializeJson() failed: "));
+      Serial.print(F("deserializeJson() failed: "));
       Serial.println(error.c_str());
       String eMsg = "deserializeJson() failed";
       sendErrorMessage(eMsg);
@@ -329,13 +396,15 @@ boolean Relays_Static() {
 
     byte size = 0;
     for (byte i = 0; i < 20; i++) {
-    Serial.println("I: " + String(i) + ", gives:");
+      Serial.println("I: " + String(i) + ", gives:");
       String skit = doc["data"]["relays"][i];
       Serial.println(skit);
       if (skit == "null" || i >= numRelays) {
-        if (i >= numRelays) {
+        if (skit != "null" && i >= numRelays) {
           String msg = "Can only use: " + String(numRelays) + ", num of relays";
-          sendErrorMessage(msg);
+          sendErrorMessage(msg);//Could have used for loop until numrelays.
+          //But nice to get feedback, and stuffs.
+          //Also maybe create some sort of dynamic shit not requirering reflashing device in future...
         }
         size = i - 1;
         break;
@@ -345,8 +414,11 @@ boolean Relays_Static() {
         String eMsg = "Pin: " + String(pin) + " does not exist. Pin must be between 0 and " + String(NUM_DIGITAL_PINS - 1);
         sendErrorMessage(eMsg);//then just keep going....
       }
-      Serial.println("Before pin" + String(pin) + " is initilized: ");
+      //Serial.println("Before pin" + String(pin) + " is initilized: ");
       Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.
+      pinIds[i] = pin;
+      //pinActive
+      isOnArr[i] = doc["data"]["relays"][i]["relay_is_on"];
 
       pinMode(pin, OUTPUT);
       if (doc["data"]["relays"][i]["relay_is_on"]) {
@@ -355,7 +427,7 @@ boolean Relays_Static() {
         digitalWrite(pin, LOW);
       }
 
-      Serial.println("After pin" + String(pin) + " is initilized: ");
+      //Serial.println("After pin" + String(pin) + " is initilized: ");
       Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.
 
     }

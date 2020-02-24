@@ -1,7 +1,7 @@
-dyn : 1
+dyn : 0
 sT : 0
 eST : 0
-led0 : duration : 4000, isOn : 1
-led1 : duration : 4000, isOn : 0
-led2 : duration : 4000, isOn : 1
-led3 : duration : 4000, isOn : 0
+led0 : 1
+led1 : 0
+led2 : 1
+led3 : 0

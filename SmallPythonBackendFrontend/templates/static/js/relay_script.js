@@ -111,6 +111,30 @@ function sendDynamic(){
     console.log("DATA AFTER: "+JSON.stringify(data));
     console.log("Content AFTER: "+JSON.stringify(content));
     sessionStorage.setItem("relays",JSON.stringify(data));
+    console.log("Will now post!");
+    $.ajax({
+        url: "/arduino_relay",
+        type: 'POST',
+        dataType: 'json',
+        data: JSON.stringify(data["data"]),
+        //headers:{"credentials":"BAJS"},
+        //credentials:"BAJS",
+        beforeSend: function (request) {
+            request.setRequestHeader("x-api-key", 1337);
+            request.setRequestHeader("Credentials", "BAJS");
+        },
+
+        contentType: 'application/json; charset=utf-8',
+        success: function (result) {
+            console.log("RESULTATFAN EFTER: \n" + result)
+        },
+        error: function (request, status, error) {
+            console.log("request: " + request);
+            console.log("status: " + status);
+            console.log("ERROR: " + error);
+        }
+    });
+
 }
 function sendStatic(){
     console.log("Will now SEND using the static/ programerless info.");

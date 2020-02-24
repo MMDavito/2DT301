@@ -1,32 +1,32 @@
 /*
   Web client
 
- This sketch connects to a website (http://www.google.com)
- using the WiFi module.
+  This sketch connects to a website (http://www.google.com)
+  using the WiFi module.
 
- This example is written for a network using WPA encryption. For
- WEP or WPA, change the Wifi.begin() call accordingly.
+  This example is written for a network using WPA encryption. For
+  WEP or WPA, change the Wifi.begin() call accordingly.
 
- This example is written for a network using WPA encryption. For
- WEP or WPA, change the Wifi.begin() call accordingly.
+  This example is written for a network using WPA encryption. For
+  WEP or WPA, change the Wifi.begin() call accordingly.
 
- Circuit:
- * Board with NINA module (Arduino MKR WiFi 1010, MKR VIDOR 4000 and UNO WiFi Rev.2)
+  Circuit:
+   Board with NINA module (Arduino MKR WiFi 1010, MKR VIDOR 4000 and UNO WiFi Rev.2)
 
- created 13 July 2010
- by dlf (Metodo2 srl)
- modified 31 May 2012
- by Tom Igoe
- */
+  created 13 July 2010
+  by dlf (Metodo2 srl)
+  modified 31 May 2012
+  by Tom Igoe
+*/
 
 #define ARDUINOJSON_DECODE_UNICODE 1
 
 #include <SPI.h>
 #include <WiFiNINA.h>
-#include <ArduinoHttpClient.h> 
+#include <ArduinoHttpClient.h>
 #include <ArduinoJson.h>
 //StaticJsonDocument<256> doc;//Earlier "jsonBuffer"
-DynamicJsonDocument doc(1024);
+//const size_t capacity = JSON_ARRAY_SIZE(20) + 20*JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(4) + 640;
 
 int api_key = 1337;
 String credentials = "BAJS";
@@ -34,11 +34,19 @@ int num_pins = NUM_DIGITAL_PINS;
 
 boolean isDynamic = false;
 boolean hasStartTime = false;
- 
-long startTimes [NUM_DIGITAL_PINS];
-long durations [NUM_DIGITAL_PINS];
-boolean activeArr [NUM_DIGITAL_PINS];
-boolean isOnArr [NUM_DIGITAL_PINS];
+boolean eachHasStartTime = false;
+
+//long startTimes [NUM_DIGITAL_PINS];
+//long durations [NUM_DIGITAL_PINS];
+//boolean activeArr [NUM_DIGITAL_PINS];
+//boolean isOnArr [NUM_DIGITAL_PINS];
+
+int numRelays = 4;
+byte indexes[numRelays];
+long startTimes [numRelays];
+long durations [numRelays];
+boolean activeArr [numRelays];
+boolean isOnArr [numRelays];
 
 
 
@@ -52,7 +60,7 @@ int keyIndex = 0;            // your network key Index number (needed only for W
 int status = WL_IDLE_STATUS;
 // if you don't want to use DNS (and reduce your sketch size)
 // use the numeric IP instead of the name for the server:
-IPAddress server(85,24,161,85);  // numeric IP for My server.
+IPAddress server(85, 24, 161, 85); // numeric IP for My server.
 int port = 5000;//My server
 //char server[] = "www.google.com";    // name address for Google (using DNS)
 //int port = 80; //For google.
@@ -107,7 +115,7 @@ void setup() {
     Serial.println("connected to server");
     client.beginRequest();
     client.get("/arduino_data");
-    client.sendHeader("Credentials: "+String(credentials));
+    client.sendHeader("Credentials: " + String(credentials));
     client.endRequest();
     // read the status code and body of the response
     int statusCode = client.responseStatusCode();
@@ -119,14 +127,14 @@ void setup() {
     Serial.print("Response: ");
     Serial.println(response);
 
-    
+
     /*
-    // Make a HTTP request:
-    //client.println("GET /arduino_data HTTP/1.1");
-    client.println("GET /search?q=arduino HTTP/1.1");
-    client.println("Host: "+String(server));
-    client.println("Connection: close");
-    client.println();
+      // Make a HTTP request:
+      //client.println("GET /arduino_data HTTP/1.1");
+      client.println("GET /search?q=arduino HTTP/1.1");
+      client.println("Host: "+String(server));
+      client.println("Connection: close");
+      client.println();
     */
   }
 }
@@ -135,32 +143,54 @@ void loop() {
   // if there are incoming bytes available
   // from the server, read them and print them:
   //boolean shize = getRelayInfo(indexes,isOn);
-/*
-  for(int i = 0; i<4;i++){
-      boolean shize = changeRelays();
-      Serial.println("The boolean: "+shize);
-      delay(4000);
-  }
-*/
+  /*
+    for(int i = 0; i<4;i++){
+        boolean shize = changeRelays();
+        Serial.println("The boolean: "+shize);
+        delay(4000);
+    }
+  */
   Serial.println("Will now loop forever");
   // do nothing forevermore:
   //while (true);
-  boolean shize = changeRelays();
-  Serial.println("The boolean: "+shize);
-  delay(1000);
+  if (isDynamic) {
+    boolean shize = Relays_Dynamic();
+    if (!shize) {
+      Serial.println("LOOP FOREVER");
+      while (true) {}
+      Serial.println("The boolean: " + shize);
+      if (isDynamic) delay(1000);
+    } else {
+      boolean shize = Relays_Static();
+      Serial.println("The boolean: " + shize);
+      if (!shize) {
+        Serial.println("LOOP FOREVER");
+        while (true) {}
+      }
+      if (!isDynamic) delay(1000);
+    }
+  }
+  boolean loopDynamic() {
+    boolean shize = Relays_Dynamic();
+    if (isDynamic) delay(1000);
+    else return true;
+    if(!shize) return false;
+    
+  }
 }
-//RETURN SIZE OR -1
-boolean changeRelays(){
+
+boolean Relays_Dynamic() {
   //Could also print the information to EEPROM to allow for more secure things (useable turning on intervall on disconnect, but that is when i create that!)
   //allows for up to 20 relays(no card have that many)
-  
-    
-   if (client.connect(server, port)) {
+
+
+  if (client.connect(server, port)) {
     Serial.println("connected to server");
     client.beginRequest();
     client.get("/arduino_relay");
-    client.sendHeader("Credentials: "+String(credentials));
-    client.sendHeader("x-api-key: "+String(api_key));
+    client.sendHeader("Credentials: " + String(credentials));
+    client.sendHeader("x-api-key: " + String(api_key));
+    client.sendHeader("is_arduino: " + true));
     client.endRequest();
     // read the status code and body of the response
     int statusCode = client.responseStatusCode();
@@ -171,20 +201,31 @@ boolean changeRelays(){
     Serial.println(statusCode);
     Serial.print("Response: ");
     Serial.println(response);
-    
-    auto error = deserializeJson(doc, response);
-  
-    if(error) {
+    DynamicJsonDocument doc(1024);//Local variables are destroyed/released when exiting scope..
 
-      Serial.print(F("deserializeJson() failed: "));
+    auto error = deserializeJson(doc, response);
+
+    if (error) {
+
+    Serial.print(F("deserializeJson() failed: "));
       Serial.println(error.c_str());
       String eMsg = "deserializeJson() failed";
       sendErrorMessage(eMsg);
-      return false;    
+      return false;
     }//ELSE SUCCESS
+    if (!doc["data"]["is_dynamic"]) {
+      isDynamic = false;
+      return false;//MAYBE RETURN TRUE????TODO
+    }
+    if(doc["data"]["has_start_time"]){
+      hasStartTime = true;
+      }else hasStartTime = false;
+    if(doc["data"]["each_has_start_time"]){
+      eachHasStartTime=true;
+      }else eachHasStartTime = false;
     String bajs = doc["data"]["relays"];
     String skit = doc["data"]["relays"][2];
-  
+
     Serial.println("DATA length:");
     Serial.println(skit);
     Serial.println("DATA?:");
@@ -195,50 +236,148 @@ boolean changeRelays(){
     Serial.println(String(sizeof(doc["data"]["relays"][0])));
 
     byte size = 0;
-    for(byte i = 0; i < 20;i++){
-      Serial.println("I: "+String(i)+", gives:");
+    for (byte i = 0; i < 20; i++) {
+    Serial.println("I: " + String(i) + ", gives:");
       String skit = doc["data"]["relays"][i];
       Serial.println(skit);
-      if(skit == "null"){
+      if (skit == "null" || i >= numRelays) {
+        if (i >= numRelays) {
+          String msg = "Can only use: " + String(numRelays) + ", num of relays";
+          sendErrorMessage(msg);
+        }
         size = i - 1;
         break;
-      }//ELSE IS VALID:    
+      }//ELSE IS VALID:
       int pin = doc["data"]["relays"][i]["id"];
-      if(pin<0 || pin> NUM_DIGITAL_PINS){
-        String eMsg = "Pin: "+String(pin)+" does not exist. Pin must be between 0 and "+String(NUM_DIGITAL_PINS-1);
+      if (pin < 0 || pin > NUM_DIGITAL_PINS) {
+        String eMsg = "Pin: " + String(pin) + " does not exist. Pin must be between 0 and " + String(NUM_DIGITAL_PINS - 1);
         sendErrorMessage(eMsg);//then just keep going....
       }
-      Serial.println("Before pin"+String(pin)+" is initilized: ");
+      Serial.println("Before pin" + String(pin) + " is initilized: ");
       Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.
 
-      pinMode(pin,OUTPUT);
-      if(doc["data"]["relays"][i]["relay_is_on"]){
+      pinMode(pin, OUTPUT);
+      if (doc["data"]["relays"][i]["relay_is_on"]) {//TODO FORTSÄTT här för att ändra booleans och durations i global variables.
         digitalWrite(pin, HIGH);
-      }else{ digitalWrite(pin, LOW);}
-    
-      Serial.println("After pin"+String(pin)+" is initilized: ");
+      } else {
+        digitalWrite(pin, LOW);
+      }
+
+      Serial.println("After pin" + String(pin) + " is initilized: ");
       Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.
 
-      }
-    }else{
-      Serial.println("FAIL AT CONNECTING");
-      return false;
     }
-  return true;
+  } else {
+    Serial.println("FAIL AT CONNECTING");
+    return false;
   }
+  return true;
+}
 
-void sendErrorMessage(String msg){
-    String content = "Credentials=ARDUINO_BAJS&data=";
-    content+=msg;
-    client.post("/arduino_data");
-      
+/**
+   This sets and changes relays acording to relays..
+*/
+boolean Relays_Static() {
+  //Could also print the information to EEPROM to allow for more secure things (useable turning on intervall on disconnect, but that is when i create that!)
+  //allows for up to 20 relays(no card have that many)
+
+
+  if (client.connect(server, port)) {
+    Serial.println("connected to server");
+    client.beginRequest();
+    client.get("/arduino_relay");
+    client.sendHeader("Credentials: " + String(credentials));
+    client.sendHeader("x-api-key: " + String(api_key));
+    client.sendHeader("is_arduino: " + true));
+    client.endRequest();
+    // read the status code and body of the response
+    int statusCode = client.responseStatusCode();
+    //statusCode = client.responseStatusCode();
+    String response = client.responseBody();
+
+    Serial.print("Status code: ");
+    Serial.println(statusCode);
+    Serial.print("Response: ");
+    Serial.println(response);
+    DynamicJsonDocument doc(1024);//Local variables are destroyed/released when exiting scope..
+
+    auto error = deserializeJson(doc, response);
+
+    if (error) {
+
+    Serial.print(F("deserializeJson() failed: "));
+      Serial.println(error.c_str());
+      String eMsg = "deserializeJson() failed";
+      sendErrorMessage(eMsg);
+      return false;
+    }//ELSE SUCCESS
+    if (doc["data"]["is_dynamic"]) {
+      isDynamic = true;
+      return true;//MAYBE RETURN TRUE????TODO
+    }//ELSE:
+    String bajs = doc["data"]["relays"];
+    String skit = doc["data"]["relays"][2];
+
+    Serial.println("DATA length:");
+    Serial.println(skit);
+    Serial.println("DATA?:");
+    Serial.println(bajs);
+    Serial.println("Will now print the array:");
+    Serial.println(String(sizeof(doc["data"]["relays"]) / sizeof(doc["data"]["relays"][0])));
+    Serial.println(String(sizeof(doc["data"]["relays"])));
+    Serial.println(String(sizeof(doc["data"]["relays"][0])));
+
+    byte size = 0;
+    for (byte i = 0; i < 20; i++) {
+    Serial.println("I: " + String(i) + ", gives:");
+      String skit = doc["data"]["relays"][i];
+      Serial.println(skit);
+      if (skit == "null" || i >= numRelays) {
+        if (i >= numRelays) {
+          String msg = "Can only use: " + String(numRelays) + ", num of relays";
+          sendErrorMessage(msg);
+        }
+        size = i - 1;
+        break;
+      }//ELSE IS VALID:
+      int pin = doc["data"]["relays"][i]["id"];
+      if (pin < 0 || pin > NUM_DIGITAL_PINS) {
+        String eMsg = "Pin: " + String(pin) + " does not exist. Pin must be between 0 and " + String(NUM_DIGITAL_PINS - 1);
+        sendErrorMessage(eMsg);//then just keep going....
+      }
+      Serial.println("Before pin" + String(pin) + " is initilized: ");
+      Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.
+
+      pinMode(pin, OUTPUT);
+      if (doc["data"]["relays"][i]["relay_is_on"]) {
+        digitalWrite(pin, HIGH);
+      } else {
+        digitalWrite(pin, LOW);
+      }
+
+      Serial.println("After pin" + String(pin) + " is initilized: ");
+      Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.
+
+    }
+  } else {
+    Serial.println("FAIL AT CONNECTING");
+    return false;
+  }
+  return true;
+}
+
+void sendErrorMessage(String msg) {
+  String content = "Credentials=ARDUINO_BAJS&data=";
+  content += msg;
+  client.post("/arduino_data");
+
   client.sendHeader("Content-Type", "application/x-www-form-urlencoded");
   client.sendHeader("Content-Length", content.length());
   client.sendHeader("X-Custom-Header", "custom-header-value");
   client.beginBody();
   client.print(content);
   client.endRequest();
-  }
+}
 void printWifiStatus() {
   // print the SSID of the network you're attached to:
   Serial.print("SSID: ");

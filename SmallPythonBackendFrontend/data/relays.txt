@@ -1,7 +1,8 @@
-dyn : 1
+dyn : 0
 sT : 0
 eST : 0
-led0 : duration : 4000, start_time : -3661000, shitty_time : , isOn : 1
-led1 : duration : 4000, start_time : -3657000, shitty_time : , isOn : 0
-led2 : duration : 4000, start_time : -3653000, shitty_time : , isOn : 1
-led3 : duration : 4000, start_time : -3649000, shitty_time : , isOn : 0
+repeats : -2
+led0 : 1
+led1 : 0
+led2 : 0
+led3 : 0

@@ -35,6 +35,7 @@ class RelayService():
         dyn=int(lines[0][-2])
         sT=int(lines[1][-2])
         eST=int(lines[2][-2])
+        repeats = int(lines[3][(lines[3].find(":")+2):])
         is_dynamic = False
         hasStartTime = False
         eachHasStartTime = False
@@ -47,7 +48,7 @@ class RelayService():
         
         if IS_DEBUG:
             print("DYN=",dyn,", ST=",sT,", EST=",eST)
-        for i in range(3,len(lines)):
+        for i in range(4,len(lines)):
             line = lines[i]
             index = line.find('d')+1
             indexEnd = line.find(':')-1
@@ -70,10 +71,14 @@ class RelayService():
             "is_dynamic":is_dynamic,
             "has_start_time":hasStartTime,
             "each_has_start_time":eachHasStartTime,
+            "current_time":timeHelper.get_current_timeArduino(),
+            "num_repeats":repeats,
             "relays":listRelays
         } 
+        """
         if isArduino:
             resp["current_time"]=timeHelper.get_current_timeArduino()
+        """
         return resp
 
     @classmethod
@@ -91,7 +96,7 @@ class RelayService():
         is_dynamic = False
         hasStartTime = False
         eachHasStartTime = False
-
+        repeats=-2
         if "is_dynamic" in data and (not data["is_dynamic"] is None) and data["is_dynamic"] == True:
             """
             print("SHISEEEE")
@@ -106,6 +111,9 @@ class RelayService():
                 hasStartTime = True
             if "each_has_start_time" in data and (not data["each_has_start_time"] is None) and data["each_has_start_time"] == True:
                 eachHasStartTime = True
+            if is_dynamic:
+                 if "num_repeats" in data and (not data["num_repeats"] is None):
+                     repeats=data["num_repeats"]
 
 
         relays = (data["relays"])
@@ -155,6 +163,11 @@ class RelayService():
             myfile.write("\n")
             myfile.write("eST : "+str(eST))
             myfile.write("\n")
+            #if is_dynamic:
+            myfile.write("repeats : "+str(repeats))
+            myfile.write("\n")
+
+
             for i in range(len(relays)):
                 if IS_DEBUG:
                     print("RELAY NUMBER: ",

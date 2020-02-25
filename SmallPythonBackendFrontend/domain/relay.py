@@ -62,7 +62,7 @@ class RelayDynamic:
         subString = subString[tempEnd+2:]
         tempStart = subString.find(':')+2
         tempEnd = subString.find(',')
-        print("BAJS REMOVE 1: ", subString[tempStart:tempEnd])
+        print("BAJS REMOVE 2: ", subString[tempStart:tempEnd])
 
         shittyTime = subString[tempStart:tempEnd]
         #temp = RelayDynamic()

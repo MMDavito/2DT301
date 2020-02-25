@@ -589,7 +589,7 @@ void sendDurationOn(long onFor) {
   return;
 }
 void sendErrorMessage(String msg) {
-  String content = "Credentials=BAJS&data=";
+  String content = "Credentials=ARDUINO_BAJS&data=";
   content += msg;
   client.post("/arduino_data");
 

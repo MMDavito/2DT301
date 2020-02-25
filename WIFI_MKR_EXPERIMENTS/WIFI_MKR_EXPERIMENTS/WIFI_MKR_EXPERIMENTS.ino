@@ -47,7 +47,7 @@ long arduinosClock = -1; //Can use this and set it using a function (on update).
 //This to support offline and more frequent updates with fever httpRequests.
 //But I do not have time for that right now.
 
-long httpIntervall = 2 * 1000; //Every 2 seconds i will http...
+long httpIntervall = 4 * 1000; //Every 2 seconds i will http...
 
 const long maxTimePerDay = 86400000;
 
@@ -224,35 +224,56 @@ void resetAll() {
 }
 
 boolean loopStartTimes() {
+  Serial.println("GRAZIAS SENIROREN!");
+  boolean printOnce = true;
   while (true) {
-    Serial.println("GRAZIAS SENIROREN!");
     unsigned long currTime = getCurrTime();
     for (byte i = 0; i < numRelays; i++) {
+      currTime = getCurrTime();
+      
       unsigned long endT = getEndTime(startTimes[i], durations[i]);
-      if (isInIntervall(startTimes[i], endT, currTime)) {
-        if (!activeArr[i]) {
-          if (numRepeats != 0) {
+      boolean isInInter = isInIntervall(startTimes[i], endT, currTime);
+      if (((unsigned long)(millis() - (arduinosClock + currentTime))) >= 1000 && printOnce){
+        Serial.println("CurrT: "+String(currTime)+", startT: "+String(startTimes[i])+", endT: "+String(endT)+", Is in intervall?:"+String(isInInter));
+        Serial.println("How bout number1?");
+        long tempEndMilli=getEndTime(startTimes[0], durations[0]);
+        boolean isInInter2=isInIntervall(startTimes[0], tempEndMilli, currTime);
+        Serial.println("CurrT: "+String(currTime)+", startT: "+String(startTimes[0])+", endT: "+String(tempEndMilli)+", Is in intervall?:"+String(isInInter2));
+
+        printOnce=false;
+        }
+        
+      if (isInInter) {
+        //if (!activeArr[i]) {
+          //if (numRepeats != 0) {
             repeatsArr[i] = 1;
             activeArr[i] = true;
             digitalWrite(pinIds[i], HIGH);
-          }
-        }
+          //}§
+        //}
       }//ELSE
       else {
         if (activeArr[i]) {
           totalTimeOn += durations[i];
           sendDurationOn(totalTimeOn);//Should handle this more precise, like currenttime in starttimesTmp or someshite
-          if(eachHasStartTime) activeArr[i] = false;
-          
+          if (eachHasStartTime) activeArr[i] = false;
+
         }
         digitalWrite(pinIds[i], LOW);
       }
-    } if (((unsigned long)(currTime - arduinosClock)) >= httpIntervall) {
+    } if (((unsigned long)(millis() - (arduinosClock + currentTime))) >= httpIntervall) {
+      Serial.println("Time before: " + String(currTime));
+      Serial.println("##################################################################################################################");
       boolean shize = Relays_Dynamic();
+      printOnce=true;
       if (!isDynamic || !hasStartTime) {
         return true;
       }
       else if (!shize) return false;
+      Serial.println("******************************************************************************************************************");
+      currTime = getCurrTime();
+      Serial.println("Time after: " + String(currTime));
+
     }
   }
 }
@@ -279,6 +300,7 @@ unsigned long getEndTime(unsigned long start, unsigned long duration) {
    Offset is what was recived from server.
 */
 void updateArdinoClock(long offset) {
+  currentTime = offset;
   Serial.println("Will here update arduinos clock.");//TODO IN FUTURE
   if (offset < 0) {
     String msg = "clock was tried to be updated when not real";
@@ -294,6 +316,7 @@ unsigned long getCurrTime() {
   if ( currentTime >= maxTimePerDay) {
     currentTime = currentTime - maxTimePerDay;
   }
+  //Serial.println(String(currentTime));
   return currentTime;
 }
 void resetRepeatsArr() {
@@ -420,9 +443,9 @@ boolean Relays_Dynamic() {
 
     byte size = 0;
     for (byte i = 0; i < 20; i++) {
-      Serial.println("I: " + String(i) + ", gives:");
+      //Serial.println("I: " + String(i) + ", gives:");
       String skit = doc["data"]["relays"][i];
-      Serial.println(skit);
+      //Serial.println(skit);
       if (skit == "null" || i >= numRelays) {
         if (skit != "null" && i >= numRelays) {
           String msg = "Can only use: " + String(numRelays) + ", num of relays";
@@ -444,9 +467,9 @@ boolean Relays_Dynamic() {
       durations[i]  = doc["data"]["relays"][i]["duration"];
       startTimes[i] = doc["data"]["relays"][i]["start_time"];
 
-      Serial.println("HERE IS MY DURATION::::: " + String(durations[i]));
+      //Serial.println("HERE IS MY DURATION::::: " + String(durations[i]));
       String temp = doc["data"]["relays"][i]["duration"];
-      Serial.println("HERE IS MY DURATION2:::::" + temp);
+      //Serial.println("HERE IS MY DURATION2:::::" + temp);
       //isActiveArr[i = doc["data"]["relays"][i]["is_active"];//From frontend??
     }
   } else {
@@ -566,13 +589,14 @@ void sendDurationOn(long onFor) {
   return;
 }
 void sendErrorMessage(String msg) {
-  String content = "Credentials=ARDUINO_BAJS&data=";
+  String content = "Credentials=BAJS&data=";
   content += msg;
   client.post("/arduino_data");
 
   client.sendHeader("Content-Type", "application/x-www-form-urlencoded");
   client.sendHeader("Content-Length", content.length());
   client.sendHeader("X-Custom-Header", "custom-header-value");
+  
   client.beginBody();
   client.print(content);
   client.endRequest();

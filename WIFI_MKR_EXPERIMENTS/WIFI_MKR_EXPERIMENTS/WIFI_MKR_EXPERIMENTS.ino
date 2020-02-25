@@ -38,6 +38,8 @@ int num_pins = NUM_DIGITAL_PINS;
 boolean isDynamic = false;
 boolean hasStartTime = false;
 boolean eachHasStartTime = false;
+long currentTime=-1;//Will be sent on hasStartTime as a field in the json.
+const long maxTimePerDay = 86400000;  
 
 //long startTimes [NUM_DIGITAL_PINS];
 //long durations [NUM_DIGITAL_PINS];

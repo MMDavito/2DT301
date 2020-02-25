@@ -42,3 +42,7 @@ When i later implement the database 1 time per minute would be good enough (butt
 But firstly turn on and of led from webpage.
 ------------------------------
 Add "get current time" for the arduino to get current time of day in millis for start of duration....
+-------------------------------
+**2020-02-25**
+Make starttime possible.
+Will make server send time of day in milliseconds to arduino when asking for dynamic.....

@@ -29,6 +29,16 @@ class timeHelper:
         else:
             time_form = "%H:%M:%S"
             return time.strftime(time_form)
+    def get_current_timeArduino():
+        time = datetime.utcnow().time()
+        hours = time.hour
+        minutes = time.minute
+        seconds = time.second
+        milliseconds = 1000*seconds
+        milliseconds += 1000*60*minutes
+        milliseconds += 1000*60*60*hours
+        
+        return milliseconds
 
 
 """If I ever refactor this is good, but right now i need to create objects of them.

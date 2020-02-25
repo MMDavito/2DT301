@@ -127,7 +127,7 @@ function sendDynamic() {
         // only interesting ifEach hasStarttime == false
         content["num_repeats"] = repeats;
 
-        if (hasStartTime && i == 0) {
+        if (i == 0) {
             var startTime = document.getElementById("start_time_" + relay["id"]);
             var start = startTime.value;
             console.log("STARTIME length: " + startTime.value.length);
@@ -136,9 +136,11 @@ function sendDynamic() {
             var minutes = -1;
             var seconds = -1;
             if (start.length == 0) {
-                alert("Should never happen, screenshot and send to David!");//alredy tested.
+                //alert("Should never happen, screenshot and send to David!");//alredy tested.
+
                 hasStartTime = false;
                 eachHasStartTime = false;
+                milliseconds = -1;
             }
             else if (start.length == 8) {
                 hours = parseInt(start.substring(0, start.indexOf(":")));
@@ -164,15 +166,15 @@ function sendDynamic() {
                 hasStartTime = false;
                 eachHasStartTime = false;
             }
-            if (hasStartTime) {
-                milliseconds = 0;
-                milliseconds += seconds * 1000;
-                milliseconds += minutes * 1000 * 60;
-                milliseconds += hours * 1000 * 60 * 60;
-                relay["start_time"] = milliseconds;
-                relay["shitty_time"] = start;
-            }
-        } else if (eachHasStartTime && i > 0) {
+            //if (hasStartTime) {
+            milliseconds = 0;
+            milliseconds += seconds * 1000;
+            milliseconds += minutes * 1000 * 60;
+            milliseconds += hours * 1000 * 60 * 60;
+            relay["start_time"] = milliseconds;
+            relay["shitty_time"] = start;
+            //}
+        } else if (i > 0) {
             var startTime = document.getElementById("start_time_" + relay["id"]);
             var start = startTime.value;
             console.log("STARTIME length: " + startTime.value.length);
@@ -221,31 +223,32 @@ function sendDynamic() {
                 hasStartTime = false;
                 eachHasStartTime = false;
             }
-            if (eachHasStartTime) {
-                relay["start_time"] = milliseconds;
-                relay["shitty_time"] = start;
-            }
-        } else if (i > 0 && hasStartTime && !eachHasStartTime) {
-            var startTime = document.getElementById("start_time_" + relay["id"]);
-            var start = startTime.value;
-            console.log("STARTIME length: " + startTime.value.length);
-            console.log("STARTIME value: " + startTime.value);
-            var hours = -1;
-            var minutes = -1;
-            var seconds = -1;
-            milliseconds = 0;
-            if (start.length == 0) {//Choose previous relay time+duration
-                milliseconds = relays[i - 1]["start_time"] + relays[i - 1]["duration"];
-                if (milliseconds >= maxTimePerDay) {
-                    console.log("maX TIME: " + maxTimePerDay);
-                    console.log("millis: " + milliseconds);
-                    temp = milliseconds - maxTimePerDay;
-                    milliseconds = temp;
-                }
-            }
+            //if (eachHasStartTime) {
             relay["start_time"] = milliseconds;
             relay["shitty_time"] = start;
-        }
+            //}
+
+        }/* else if (i > 0 && hasStartTime && !eachHasStartTime) {
+             var startTime = document.getElementById("start_time_" + relay["id"]);
+             var start = startTime.value;
+             console.log("STARTIME length: " + startTime.value.length);
+             console.log("STARTIME value: " + startTime.value);
+             var hours = -1;
+             var minutes = -1;
+             var seconds = -1;
+             milliseconds = 0;
+             if (start.length == 0) {//Choose previous relay time+duration
+                 milliseconds = relays[i - 1]["start_time"] + relays[i - 1]["duration"];
+                 if (milliseconds >= maxTimePerDay) {
+                     console.log("maX TIME: " + maxTimePerDay);
+                     console.log("millis: " + milliseconds);
+                     temp = milliseconds - maxTimePerDay;
+                     milliseconds = temp;
+                 }
+             }
+             relay["start_time"] = milliseconds;
+             relay["shitty_time"] = start;
+         }*/
         console.log("RELAY AFTER: " + JSON.stringify(relay));
         relays[i] = relay;
         i++;

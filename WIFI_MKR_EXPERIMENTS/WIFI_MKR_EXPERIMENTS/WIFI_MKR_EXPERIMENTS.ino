@@ -38,8 +38,15 @@ int num_pins = NUM_DIGITAL_PINS;
 boolean isDynamic = false;
 boolean hasStartTime = false;
 boolean eachHasStartTime = false;
-long currentTime=-1;//Will be sent on hasStartTime as a field in the json.
-const long maxTimePerDay = 86400000;  
+long currentTime = -1; //Will be sent on hasStartTime as a field in the json.
+
+long arduinosClock = -1; //Can use this and set it using a function (on update).
+//This to support offline and more frequent updates with fever httpRequests.
+//But I do not have time for that right now.
+
+long httpIntervall = 2* 1000; //Every 2 seconds i will http...
+
+const long maxTimePerDay = 86400000;
 
 //long startTimes [NUM_DIGITAL_PINS];
 //long durations [NUM_DIGITAL_PINS];
@@ -181,7 +188,9 @@ void loop() {
   //while (true);
   if (isDynamic) {
     Relays_Dynamic();
-    boolean shize = loopDynamic();
+    boolean shize = false;
+    if(!hasStartTime) shize = loopDynamic();
+    else shize = loopStartTimes();
     Serial.println("WTF!!!!!!!!!!!!!");
     if (!shize) {
       Serial.println("LOOP FOREVER");
@@ -199,12 +208,21 @@ void loop() {
     if (!isDynamic) delay(1000);
   }
 }
+boolean loopStartTimes(){
+  Serial.println("GRAZIAS SENIROREN!");
+  return false;
+  }
+void updateArdunoClock(long offset){
+  Serial.println("Will here update arduinos clock.");//TODO IN FUTURE
+ Serial.println(String(offset));
+  }
+
 boolean loopDynamic() {
-  for(int i = 0;i<numRelays;i++){
-    pinMode(pinIds[i],OUTPUT);
-    digitalWrite(pinIds[i],LOW);
-    }
-  
+  for (int i = 0; i < numRelays; i++) {
+    pinMode(pinIds[i], OUTPUT);
+    digitalWrite(pinIds[i], LOW);
+  }
+
   byte i = 0;
   startTimesTmp[i] = millis();
   while (true) {
@@ -213,28 +231,28 @@ boolean loopDynamic() {
     if (!isDynamic) return true;
     //if (!shize) return false;
     //Start of program:
-      pinMode(pinIds[i], OUTPUT);
-      Serial.println("I: " + String(i) + ", gives duration: " + String(durations[i]));
-      Serial.println("I: " + String(i) + ", gives start: " + String(startTimesTmp[i]));
-      Serial.println("I: " + String(i) + ", gives runtime: " + String((millis() - startTimesTmp[i])));
+    pinMode(pinIds[i], OUTPUT);
+    Serial.println("I: " + String(i) + ", gives duration: " + String(durations[i]));
+    Serial.println("I: " + String(i) + ", gives start: " + String(startTimesTmp[i]));
+    Serial.println("I: " + String(i) + ", gives runtime: " + String((millis() - startTimesTmp[i])));
 
-      if ((millis() - startTimesTmp[i]) < durations[i]) {
-        digitalWrite(pinIds[i], HIGH);
-      } else {//Not initlized or duration overflow
-        digitalWrite(pinIds[i], LOW);
-        if (i >= (numRelays - 1)) {
-            startTimesTmp[0] = millis();
-            i=0;
-            continue;//jump to while
-          //i = numRelays;
-        } else{ 
-          Serial.println("i+1 is: "+String(i+1));
-          startTimesTmp[i + 1] = millis();
-          Serial.println("With value: "+String(startTimesTmp[i+1]));
-          i++; 
-          continue;//jump to while.
-        }
+    if ((millis() - startTimesTmp[i]) < durations[i]) {
+      digitalWrite(pinIds[i], HIGH);
+    } else {//Not initlized or duration overflow
+      digitalWrite(pinIds[i], LOW);
+      if (i >= (numRelays - 1)) {
+        startTimesTmp[0] = millis();
+        i = 0;
+        continue;//jump to while
+        //i = numRelays;
+      } else {
+        Serial.println("i+1 is: " + String(i + 1));
+        startTimesTmp[i + 1] = millis();
+        Serial.println("With value: " + String(startTimesTmp[i + 1]));
+        i++;
+        continue;//jump to while.
       }
+    }
     delay(1000); //Should replace/refactor this logic of halting execution.....
     boolean shize = Relays_Dynamic();//TODO UNCOMMENT
 
@@ -439,7 +457,18 @@ boolean Relays_Static() {
   }
   return true;
 }
-
+/**
+   Sends the duration in hours and seconds the relays have been on (for "testing") purposes around middnight (utc)
+   makes millis into hours,minutes and seconds.
+*/
+void sendDurationOn(long onFor) {
+  int sec = (int) (onFor / 1000) % 60;
+  int minutes = (int)(onFor / (60 * 1000)) % 60;
+  long hours = (int) (onFor / (1000 * 60 * 60));
+  String msg = "On for: " + String(hours) + ":" + String(minutes) + ":" + String(sec);
+  sendErrorMessage(msg);
+  return;
+}
 void sendErrorMessage(String msg) {
   String content = "Credentials=ARDUINO_BAJS&data=";
   content += msg;

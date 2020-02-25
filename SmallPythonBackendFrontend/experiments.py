@@ -27,3 +27,17 @@ print("Duration string:"+duration)
 duration = int(subString[tempStart:tempEnd])#Int is same as arduino long.
 print("Duration integer:"+str(duration))
                 
+millis = 30*60*60*1000#=10 minutes
+millis += 10*60*1000#=10 minutes
+millis +=10*1000#=10 min 10 sec
+
+temp = millis
+hours = 0
+mins = 0
+sec = 0
+
+sec = (millis/1000) % 60
+minutes =(millis/(60*1000)) %60
+hours=(millis/(1000*60*60))
+
+print ("%d:%d:%d" % (hours, minutes, sec))

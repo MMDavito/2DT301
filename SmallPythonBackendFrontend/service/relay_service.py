@@ -1,6 +1,6 @@
 from flask import Response, json
 #from support.connection_factory import Connection
-from support.Response_Maker import IS_DEBUG, errorsToResponse, successToResponse
+from support.Response_Maker import IS_DEBUG, errorsToResponse, successToResponse,timeHelper
 from domain.relay import Relay, RelayDynamic
 import mysql.connector
 from mysql.connector import errorcode
@@ -53,20 +53,16 @@ class RelayService():
             indexEnd = line.find(':')-1
             if IS_DEBUG:
                 print("Line data on off?: ", line[-2])
-            isOn = True
-            if(line[-2] == "0"):
-                isOn = False
-            if is_dynamic:
-                subString = line[indexEnd+3:]
-                tempStart = subString.find(':')+2
-                tempEnd = subString.find(',')
-                duration = int(subString[tempStart:tempEnd])#Int is same as arduino long.
-                temp = RelayDynamic(line[index:indexEnd],isOn,duration)
+            if is_dynamic:                
+                temp = RelayDynamic.initFromLine(str(line))
                 if isArduino:
                     listRelays.append(temp.toDictNoBOOOOL())
                 else:
                     listRelays.append(temp.toDict())
             else:
+                isOn = True
+                if(line[-2] == "0"):
+                    isOn = False
                 temp = Relay(line[index:indexEnd], isOn)#IF IS DYN!!!!!!
                 listRelays.append(temp.toDict())
         
@@ -76,6 +72,8 @@ class RelayService():
             "each_has_start_time":eachHasStartTime,
             "relays":listRelays
         } 
+        if isArduino:
+            resp["current_time"]=timeHelper.get_current_timeArduino()
         return resp
 
     @classmethod

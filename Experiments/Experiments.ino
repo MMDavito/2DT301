@@ -134,12 +134,12 @@ void loop()
 {  timeClient.update();
   String temp = t1.getTemperature();
   Serial.println("\n");
-  Serial.print(timeClient.getFormattedDate());
+  Serial.print(timeClient.getFormattedTime());
   Serial.print("||");
   Serial.print(temp);
   Serial.println("\n");
   String content = "Credentials=ARDUINO_BAJS&data=";
-  content += timeClient.getFormattedDate();
+  content += timeClient.getFormattedTime();
   content += "||";
   content += temp;
   Serial.println("CONTENT:");

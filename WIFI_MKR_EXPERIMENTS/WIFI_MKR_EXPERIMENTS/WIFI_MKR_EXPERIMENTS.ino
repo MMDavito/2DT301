@@ -230,33 +230,34 @@ boolean loopStartTimes() {
     unsigned long currTime = getCurrTime();
     for (byte i = 0; i < numRelays; i++) {
       currTime = getCurrTime();
-      
+
       unsigned long endT = getEndTime(startTimes[i], durations[i]);
       boolean isInInter = isInIntervall(startTimes[i], endT, currTime);
-      if (((unsigned long)(millis() - (arduinosClock + currentTime))) >= 1000 && printOnce){
-        Serial.println("CurrT: "+String(currTime)+", startT: "+String(startTimes[i])+", endT: "+String(endT)+", Is in intervall?:"+String(isInInter));
+      if (((unsigned long)(millis() - (arduinosClock + currentTime))) >= 1000 && printOnce) {
+        Serial.println("CurrT: " + String(currTime) + ", startT: " + String(startTimes[i]) + ", endT: " + String(endT) + ", Is in intervall?:" + String(isInInter));
         Serial.println("How bout number1?");
-        long tempEndMilli=getEndTime(startTimes[0], durations[0]);
-        boolean isInInter2=isInIntervall(startTimes[0], tempEndMilli, currTime);
-        Serial.println("CurrT: "+String(currTime)+", startT: "+String(startTimes[0])+", endT: "+String(tempEndMilli)+", Is in intervall?:"+String(isInInter2));
+        long tempEndMilli = getEndTime(startTimes[0], durations[0]);
+        boolean isInInter2 = isInIntervall(startTimes[0], tempEndMilli, currTime);
+        Serial.println("CurrT: " + String(currTime) + ", startT: " + String(startTimes[0]) + ", endT: " + String(tempEndMilli) + ", Is in intervall?:" + String(isInInter2));
 
-        printOnce=false;
-        }
-        
+        printOnce = false;
+      }
+
       if (isInInter) {
         //if (!activeArr[i]) {
-          //if (numRepeats != 0) {
-            repeatsArr[i] = 1;
-            activeArr[i] = true;
-            digitalWrite(pinIds[i], HIGH);
-          //}§
+        //if (numRepeats != 0) {
+        repeatsArr[i] = 1;
+        activeArr[i] = true;
+        digitalWrite(pinIds[i], HIGH);
+        //}§
         //}
       }//ELSE
       else {
         if (activeArr[i]) {
+          activeArr[i]=false;
           totalTimeOn += durations[i];
           sendDurationOn(totalTimeOn);//Should handle this more precise, like currenttime in starttimesTmp or someshite
-          if (eachHasStartTime) activeArr[i] = false;
+          //if (eachHasStartTime) activeArr[i] = false;
 
         }
         digitalWrite(pinIds[i], LOW);
@@ -265,7 +266,7 @@ boolean loopStartTimes() {
       Serial.println("Time before: " + String(currTime));
       Serial.println("##################################################################################################################");
       boolean shize = Relays_Dynamic();
-      printOnce=true;
+      printOnce = true;
       if (!isDynamic || !hasStartTime) {
         return true;
       }
@@ -591,15 +592,26 @@ void sendDurationOn(long onFor) {
 void sendErrorMessage(String msg) {
   String content = "Credentials=ARDUINO_BAJS&data=";
   content += msg;
-  client.post("/arduino_data");
 
+  client.beginRequest();
+  client.post("/arduino_data");
   client.sendHeader("Content-Type", "application/x-www-form-urlencoded");
   client.sendHeader("Content-Length", content.length());
   client.sendHeader("X-Custom-Header", "custom-header-value");
-  
+
   client.beginBody();
   client.print(content);
   client.endRequest();
+
+  // read the status code and body of the response
+  int statusCode = client.responseStatusCode();
+  //statusCode = client.responseStatusCode();
+  String response = client.responseBody();
+
+  Serial.print("Status code: ");
+  Serial.println(statusCode);
+  Serial.print("Response: ");
+  Serial.println(response);
 }
 void printWifiStatus() {
   // print the SSID of the network you're attached to:

@@ -31,6 +31,7 @@
 //StaticJsonDocument<256> doc;//Earlier "jsonBuffer"
 //const size_t capacity = JSON_ARRAY_SIZE(20) + 20*JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(4) + 640;
 boolean IS_DEBUG = false;
+long lastRequest = 0;
 
 int api_key = 1337;
 String credentials = "BAJS";
@@ -48,7 +49,7 @@ long arduinosClock = -1; //Can use this and set it using a function (on update).
 //This to support offline and more frequent updates with fever httpRequests.
 //But I do not have time for that right now.
 
-long httpIntervall = 4 * 1000; //Every 4 seconds i will http...
+long httpIntervall = 10 * 1000; //Every 4 seconds i will http...
 
 const long maxTimePerDay = 86400000;
 
@@ -118,8 +119,10 @@ void setup() {
   //Initialize serial and wait for port to open:
 
   Serial.begin(9600);
-  while (!Serial) {
-    ; // wait for serial port to connect. Needed for native USB port only
+  if (IS_DEBUG) {
+    while (!Serial) {
+      ; // wait for serial port to connect. Needed for native USB port only
+    }
   }
   if (IS_DEBUG)Serial.println(NUM_DIGITAL_PINS);
 
@@ -132,6 +135,8 @@ void loop() {
   if (isDynamic) {
     Relays_Dynamic();
     resetAll();
+    resetRepeatsArr();
+    resetActiveArr();
     boolean shize = false;
     if (!hasStartTime) shize = loopDynamic();
     else {
@@ -143,10 +148,9 @@ void loop() {
       shize = loopStartTimes();
     }
     if (!shize) {
-      //if (IS_DEBUG)Serial.println("LOOP FOREVER");
-      //if (IS_DEBUG)Serial.println("LOOP FOREVER");
+      if (IS_DEBUG)Serial.println("LOOP FOREVER");
+      Serial.println("LOOP FOREVER");
 
-      
       resolveConnection();
     }
   } else {
@@ -161,13 +165,13 @@ void loop() {
 }
 void resetAll() {
   Serial.println("Hallå i resetta");//TODO REMOVE
-  /* 
-   for (int i = 0; i < numRelays; i++) {
+  /*
+    for (int i = 0; i < numRelays; i++) {
     pinMode(pinIds[i], OUTPUT);
     digitalWrite(pinIds[i], LOW);
-    */
-    for (int i = 0; i < NUM_DIGITAL_PINS; i++) {
-      Serial.println("JÄVLAR I: "+String(i));//TODO REMOVE
+  */
+  for (int i = 0; i < NUM_DIGITAL_PINS; i++) {
+    Serial.println("JÄVLAR I: " + String(i)); //TODO REMOVE
     pinMode(i, OUTPUT);
     digitalWrite(i, LOW);
   }
@@ -179,20 +183,23 @@ boolean resolveConnection() {
   wifiConnected = false;
   serverConnected = false;
   resetAll();
-  
+
   status = WL_IDLE_STATUS;
   delay(1000);
-
+  if (IS_DEBUG)Serial.println("resolveWifi");
   while (!wifiConnected) {
     delay(1000);
     wifiConnected = establishWIFI();
+  }
+  if (IS_DEBUG) {
+    Serial.println("wifiResolved");
+    Serial.println("Resolving server");
   }
   while (!serverConnected) {
     delay(1000);
     serverConnected = establishServer();
   }
-  String msg = "Re-established connection to server.";
-  sendErrorMessage(msg);
+  if (IS_DEBUG)Serial.println("ServerResolved");
   return true;
 }
 
@@ -238,21 +245,10 @@ boolean establishServer() {
   // if you get a connection, report back via serial:
   if (client.connect(server, port)) {
     if (IS_DEBUG)Serial.println("connected to server");
-    client.beginRequest();
-    client.get("/arduino_data");
-    client.sendHeader("Credentials: " + String(credentials));
-    client.endRequest();
-    // read the status code and body of the response
-    int statusCode = client.responseStatusCode();
-    //statusCode = client.responseStatusCode();
-    String response = client.responseBody();
-    if (IS_DEBUG) {
-      Serial.print("Status code: ");
-      Serial.println(statusCode);
-      Serial.print("Response: ");
-      Serial.println(response);
-    }
-    if (statusCode == 404) {
+
+    String msg = "Re-established connection to server.";
+    boolean successPost = sendErrorMessage(msg);
+    if (successPost == 404) {
       return false;
     }
     else return true;
@@ -263,7 +259,10 @@ boolean loopStartTimes() {
   Serial.println("Skall vi hare trevligt!");
   if (IS_DEBUG)Serial.println("GRAZIAS SENIROREN!");
   boolean printOnce = true;
+  boolean haveLooped = false;
+
   while (true) {
+    if (haveLooped) break;
     unsigned long currTime = getCurrTime();
     for (byte i = 0; i < numRelays; i++) {
       currTime = getCurrTime();
@@ -284,13 +283,16 @@ boolean loopStartTimes() {
         //if (!activeArr[i]) {
         //if (numRepeats != 0) {
         repeatsArr[i] = 1;
-        activeArr[i] = true;
         digitalWrite(pinIds[i], HIGH);
+        activeArr[i] = true;
+
+
         //}§
         //}
       }//ELSE
       else {
         if (activeArr[i]) {
+          if (i == numRelays - 1) haveLooped = true;
           activeArr[i] = false;
           totalTimeOn += durations[i];
           sendDurationOn(totalTimeOn);//Should handle this more precise, like currenttime in starttimesTmp or someshite
@@ -300,7 +302,7 @@ boolean loopStartTimes() {
         digitalWrite(pinIds[i], LOW);
       }
     } if (((unsigned long)(millis() - (arduinosClock + currentTime))) >= httpIntervall) {
-          Serial.println("LOOPING IN STARTTIMES");
+      Serial.println("LOOPING IN STARTTIMES");
 
       if (IS_DEBUG) {
         Serial.println("Time before: " + String(currTime));
@@ -318,6 +320,40 @@ boolean loopStartTimes() {
 
     }
   }
+  byte i = 0;
+  byte numLoops = 1;
+  while (numLoops < numRepeats) {
+    long start = millis();
+    long lastReq = millis();
+    digitalWrite(pinIds[i], HIGH);
+
+    while (millis() - start < durations[i]) {
+      if (((unsigned long)(millis() - lastReq) >= httpIntervall)) {
+        if (IS_DEBUG) {
+          Serial.println("Time before: " + String(lastReq));
+          Serial.println("##################################################################################################################");
+        }
+
+        boolean shize = Relays_Dynamic();
+        printOnce = true;
+        if (!isDynamic || !hasStartTime) {
+          return true;
+        }
+        if (!shize && (!wifiConnected || !serverConnected))return false;
+        if (IS_DEBUG) Serial.println("******************************************************************************************************************");
+        lastReq = millis();
+        if (IS_DEBUG)Serial.println("Time after: " + String(lastReq));
+
+      }
+    }
+    digitalWrite(pinIds[i], LOW);
+    totalTimeOn += durations[i];
+    sendDurationOn(totalTimeOn);//Should handle this more precise, like currenttime in starttimesTmp or someshite
+    if (i == numRelays - 1) {
+      numLoops++;
+      i = 0;
+    } else i++;
+  } return true;
 }
 boolean isInIntervall(unsigned long startT, unsigned long endT, unsigned long currT) {
   if (startT == endT) return false;
@@ -382,8 +418,8 @@ boolean loopDynamic() {
 
   byte i = 0;
   startTimesTmp[i] = millis();
+  lastRequest = millis();
   while (true) {
-    Serial.println("LOOPING IN DYNAMIC");
     if (IS_DEBUG)Serial.println("LOOPING");
 
     if (!isDynamic || hasStartTime) return true;
@@ -406,15 +442,18 @@ boolean loopDynamic() {
       } else {
         if (IS_DEBUG)   Serial.println("i+1 is: " + String(i + 1));
         startTimesTmp[i + 1] = millis();
-        if(IS_DEBUG)Serial.println("With value: " + String(startTimesTmp[i + 1]));
+        if (IS_DEBUG)Serial.println("With value: " + String(startTimesTmp[i + 1]));
         i++;
         continue;//jump to while.
       }
     }
-    delay(1000); //Should replace/refactor this logic of halting execution.....
-    boolean shize = Relays_Dynamic();//TODO UNCOMMENT
-    if (!shize && (!wifiConnected || !serverConnected))return false;
-    //But i dont have any listeners, except maybe should have a button for "axeServerForUpdate"
+    if ((unsigned long)(millis() - (lastRequest) >= httpIntervall)) {
+      Serial.println("LOOPING IN DYNAMIC");
+      lastRequest = millis();
+      boolean shize = Relays_Dynamic();//TODO UNCOMMENT
+      if (!shize && (!wifiConnected || !serverConnected))return false;
+      //But i dont have any listeners, except maybe should have a button for "axeServerForUpdate"
+    }
   }
 }
 void resetStartTimes() {

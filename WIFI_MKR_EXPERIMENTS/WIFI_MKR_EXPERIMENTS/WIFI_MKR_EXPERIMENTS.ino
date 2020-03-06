@@ -30,6 +30,7 @@
 #include <ArduinoJson.h>
 //StaticJsonDocument<256> doc;//Earlier "jsonBuffer"
 //const size_t capacity = JSON_ARRAY_SIZE(20) + 20*JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(4) + 640;
+boolean IS_DEBUG = true;
 
 int api_key = 1337;
 String credentials = "BAJS";
@@ -47,7 +48,7 @@ long arduinosClock = -1; //Can use this and set it using a function (on update).
 //This to support offline and more frequent updates with fever httpRequests.
 //But I do not have time for that right now.
 
-long httpIntervall = 4 * 1000; //Every 2 seconds i will http...
+long httpIntervall = 4 * 1000; //Every 4 seconds i will http...
 
 const long maxTimePerDay = 86400000;
 
@@ -70,6 +71,8 @@ byte repeatsArr   [numRelays];
 
 //Variables for static:
 boolean isOnArr   [numRelays];
+boolean wifiConnected = false;
+boolean serverConnected = false;
 /*
   byte pinIds[numRelays]={};//Can be -1?? if not used??
   boolean activeArr[numRelays]={};
@@ -94,6 +97,7 @@ char pass[] = SECRET_PASS;    // your network password (use for WPA, or use as k
 int keyIndex = 0;            // your network key Index number (needed only for WEP)
 
 int status = WL_IDLE_STATUS;
+
 // if you don't want to use DNS (and reduce your sketch size)
 // use the numeric IP instead of the name for the server:
 IPAddress server(85, 24, 161, 85); // numeric IP for My server.
@@ -117,63 +121,10 @@ void setup() {
   }
   Serial.println(NUM_DIGITAL_PINS);
 
-  // check for the WiFi module:
-  if (WiFi.status() == WL_NO_MODULE) {
-    Serial.println("Communication with WiFi module failed!");
-    // don't continue
-    while (true);
-  }
-
-  String fv = WiFi.firmwareVersion();
-  if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
-    Serial.println("Please upgrade the firmware");
-  }
-
-  // attempt to connect to Wifi network:
-  //Serial.print("Attempting to connect to SSID: ");
-  //status = WiFi.begin(ssid, pass);
-  //delay(2000);
-  while (status != WL_CONNECTED) {
-    Serial.print("Attempting to connect to SSID: ");
-    Serial.println(ssid);
-    // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
-    status = WiFi.begin(ssid, pass);
-
-    // wait 10 seconds for connection:
-    delay(10000);
-  }
-  Serial.println("Connected to wifi");
-  printWifiStatus();
-
-  Serial.println("\nStarting connection to server...");
-  // if you get a connection, report back via serial:
-  if (client.connect(server, port)) {
-    Serial.println("connected to server");
-    client.beginRequest();
-    client.get("/arduino_data");
-    client.sendHeader("Credentials: " + String(credentials));
-    client.endRequest();
-    // read the status code and body of the response
-    int statusCode = client.responseStatusCode();
-    //statusCode = client.responseStatusCode();
-    String response = client.responseBody();
-
-    Serial.print("Status code: ");
-    Serial.println(statusCode);
-    Serial.print("Response: ");
-    Serial.println(response);
-
-
-    /*
-      // Make a HTTP request:
-      //client.println("GET /arduino_data HTTP/1.1");
-      client.println("GET /search?q=arduino HTTP/1.1");
-      client.println("Host: "+String(server));
-      client.println("Connection: close");
-      client.println();
-    */
-  }
+  wifiConnected = establishWIFI();
+  serverConnected = establishServer();
 }
+
 
 void loop() {
   // if there are incoming bytes available
@@ -202,16 +153,14 @@ void loop() {
     Serial.println("WTF!!!!!!!!!!!!!");
     if (!shize) {
       Serial.println("LOOP FOREVER");
-      while (true) {}
-      Serial.println("The boolean: " + shize);
-      if (isDynamic) delay(1000);
+      resolveConnection();
     }
   } else {
     boolean shize = Relays_Static();
     Serial.println("The boolean: " + shize);
     if (!shize) {
       Serial.println("LOOP FOREVER");
-      while (true) {}
+      resolveConnection();
     }
     if (!isDynamic) delay(1000);
   }
@@ -222,7 +171,86 @@ void resetAll() {
     digitalWrite(pinIds[i], LOW);
   }
 }
+/**
+   Connection will be made to wifi, then try to post to server.
+*/
+boolean resolveConnection() {
+  wifiConnected = false;
+  serverConnected = false;
 
+  while (!wifiConnected) {
+    delay(1000);
+    wifiConnected = establishWIFI();
+  }
+  while (!serverConnected) {
+    delay(1000);
+    serverConnected = establishServer();
+  }
+  String msg = "Re-established connection to server.";
+  sendErrorMessage(msg);
+  return true;
+}
+
+/**
+   Returns true if connection is established
+   else it will loop forever (e.g. if module not connnected)
+*/
+boolean establishWIFI() {
+  // check for the WiFi module:
+  if (WiFi.status() == WL_NO_MODULE) {
+    Serial.println("Communication with WiFi module failed!");
+    // don't continue
+    while (true);
+  }
+
+  String fv = WiFi.firmwareVersion();
+  if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
+    Serial.println("Please upgrade the firmware");
+  }
+
+  while (status != WL_CONNECTED) {
+    Serial.print("Attempting to connect to SSID: ");
+    Serial.println(ssid);
+    // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
+    status = WiFi.begin(ssid, pass);
+
+    // wait 10 seconds for connection:
+    delay(10000);
+  }
+  Serial.println("Connected to wifi");
+  printWifiStatus();
+  return true;
+
+}
+/**
+   Returns false if 404, else returns true
+*/
+boolean establishServer() {
+
+  Serial.println("\nStarting connection to server...");
+  // if you get a connection, report back via serial:
+  if (client.connect(server, port)) {
+    Serial.println("connected to server");
+    client.beginRequest();
+    client.get("/arduino_data");
+    client.sendHeader("Credentials: " + String(credentials));
+    client.endRequest();
+    // read the status code and body of the response
+    int statusCode = client.responseStatusCode();
+    //statusCode = client.responseStatusCode();
+    String response = client.responseBody();
+
+    Serial.print("Status code: ");
+    Serial.println(statusCode);
+    Serial.print("Response: ");
+    Serial.println(response);
+    if (statusCode == 404) {
+      return false;
+    }
+    else return true;
+
+  } else return false;
+}
 boolean loopStartTimes() {
   Serial.println("GRAZIAS SENIROREN!");
   boolean printOnce = true;
@@ -254,7 +282,7 @@ boolean loopStartTimes() {
       }//ELSE
       else {
         if (activeArr[i]) {
-          activeArr[i]=false;
+          activeArr[i] = false;
           totalTimeOn += durations[i];
           sendDurationOn(totalTimeOn);//Should handle this more precise, like currenttime in starttimesTmp or someshite
           //if (eachHasStartTime) activeArr[i] = false;
@@ -404,7 +432,7 @@ boolean Relays_Dynamic() {
     Serial.println(statusCode);
     Serial.print("Response: ");
     Serial.println(response);
-    DynamicJsonDocument doc(1024);//Local variables are destroyed/released when exiting scope..
+    DynamicJsonDocument doc(2048);//Local variables are destroyed/released when exiting scope..
 
     auto error = deserializeJson(doc, response);
 
@@ -506,7 +534,8 @@ boolean Relays_Static() {
     Serial.println(statusCode);
     Serial.print("Response: ");
     Serial.println(response);
-    DynamicJsonDocument doc(1024);//Local variables are destroyed/released when exiting scope..
+
+    DynamicJsonDocument doc(2048);//Local variables are destroyed/released when exiting scope..
 
     auto error = deserializeJson(doc, response);
 
@@ -589,7 +618,7 @@ void sendDurationOn(long onFor) {
   sendErrorMessage(msg);
   return;
 }
-void sendErrorMessage(String msg) {
+boolean sendErrorMessage(String msg) {
   String content = "Credentials=ARDUINO_BAJS&data=";
   content += msg;
 
@@ -612,6 +641,8 @@ void sendErrorMessage(String msg) {
   Serial.println(statusCode);
   Serial.print("Response: ");
   Serial.println(response);
+  if (statusCode != 201)return false;
+  else return true;
 }
 void printWifiStatus() {
   // print the SSID of the network you're attached to:

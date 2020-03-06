@@ -30,7 +30,7 @@
 #include <ArduinoJson.h>
 //StaticJsonDocument<256> doc;//Earlier "jsonBuffer"
 //const size_t capacity = JSON_ARRAY_SIZE(20) + 20*JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(4) + 640;
-boolean IS_DEBUG = true;
+boolean IS_DEBUG = false;
 
 int api_key = 1337;
 String credentials = "BAJS";
@@ -109,7 +109,9 @@ int port = 5000;//My server
 // with the IP address and port of the server
 // that you want to connect to (port 80 is default for HTTP):
 WiFiClient wifi;
-HttpClient client = HttpClient(wifi, server, port);
+HttpClient client = HttpClient(wifi, server, port);//It has around 18 second timeout.
+//On some errors it will try to send error.
+//So it takes around 20+20 seconds before it tries to reestablish wifi and server.
 
 
 void setup() {
@@ -119,7 +121,7 @@ void setup() {
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
-  Serial.println(NUM_DIGITAL_PINS);
+  if (IS_DEBUG)Serial.println(NUM_DIGITAL_PINS);
 
   wifiConnected = establishWIFI();
   serverConnected = establishServer();
@@ -127,48 +129,47 @@ void setup() {
 
 
 void loop() {
-  // if there are incoming bytes available
-  // from the server, read them and print them:
-  //boolean shize = getRelayInfo(indexes,isOn);
-  /*
-    for(int i = 0; i<4;i++){
-        boolean shize = changeRelays();
-        Serial.println("The boolean: "+shize);
-        delay(4000);
-    }
-  */
-  Serial.println("Will now http forever");
-  // do nothing forevermore:
-  //while (true);
   if (isDynamic) {
     Relays_Dynamic();
     resetAll();
     boolean shize = false;
     if (!hasStartTime) shize = loopDynamic();
     else {
+      Serial.println("hej1");
+      resetAll();
+      Serial.println("hej2");
       resetRepeatsArr();
       resetActiveArr();
       shize = loopStartTimes();
     }
-    Serial.println("WTF!!!!!!!!!!!!!");
     if (!shize) {
-      Serial.println("LOOP FOREVER");
+      //if (IS_DEBUG)Serial.println("LOOP FOREVER");
+      //if (IS_DEBUG)Serial.println("LOOP FOREVER");
+
+      
       resolveConnection();
     }
   } else {
     boolean shize = Relays_Static();
-    Serial.println("The boolean: " + shize);
+    if (IS_DEBUG)Serial.println("The boolean: " + shize);
     if (!shize) {
-      Serial.println("LOOP FOREVER");
+      if (IS_DEBUG)Serial.println("LOOP FOREVER");
       resolveConnection();
     }
     if (!isDynamic) delay(1000);
   }
 }
 void resetAll() {
-  for (int i = 0; i < numRelays; i++) {
+  Serial.println("Hallå i resetta");//TODO REMOVE
+  /* 
+   for (int i = 0; i < numRelays; i++) {
     pinMode(pinIds[i], OUTPUT);
     digitalWrite(pinIds[i], LOW);
+    */
+    for (int i = 0; i < NUM_DIGITAL_PINS; i++) {
+      Serial.println("JÄVLAR I: "+String(i));//TODO REMOVE
+    pinMode(i, OUTPUT);
+    digitalWrite(i, LOW);
   }
 }
 /**
@@ -177,6 +178,10 @@ void resetAll() {
 boolean resolveConnection() {
   wifiConnected = false;
   serverConnected = false;
+  resetAll();
+  
+  status = WL_IDLE_STATUS;
+  delay(1000);
 
   while (!wifiConnected) {
     delay(1000);
@@ -198,26 +203,28 @@ boolean resolveConnection() {
 boolean establishWIFI() {
   // check for the WiFi module:
   if (WiFi.status() == WL_NO_MODULE) {
-    Serial.println("Communication with WiFi module failed!");
+    if (IS_DEBUG)Serial.println("Communication with WiFi module failed!");
     // don't continue
     while (true);
   }
 
   String fv = WiFi.firmwareVersion();
   if (fv < WIFI_FIRMWARE_LATEST_VERSION) {
-    Serial.println("Please upgrade the firmware");
+    if (IS_DEBUG)Serial.println("Please upgrade the firmware");
   }
 
   while (status != WL_CONNECTED) {
-    Serial.print("Attempting to connect to SSID: ");
-    Serial.println(ssid);
+    if (IS_DEBUG) {
+      Serial.print("Attempting to connect to SSID: ");
+      Serial.println(ssid);
+    }
     // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
     status = WiFi.begin(ssid, pass);
 
     // wait 10 seconds for connection:
     delay(10000);
   }
-  Serial.println("Connected to wifi");
+  if (IS_DEBUG)Serial.println("Connected to wifi");
   printWifiStatus();
   return true;
 
@@ -227,10 +234,10 @@ boolean establishWIFI() {
 */
 boolean establishServer() {
 
-  Serial.println("\nStarting connection to server...");
+  if (IS_DEBUG)Serial.println("\nStarting connection to server...");
   // if you get a connection, report back via serial:
   if (client.connect(server, port)) {
-    Serial.println("connected to server");
+    if (IS_DEBUG)Serial.println("connected to server");
     client.beginRequest();
     client.get("/arduino_data");
     client.sendHeader("Credentials: " + String(credentials));
@@ -239,11 +246,12 @@ boolean establishServer() {
     int statusCode = client.responseStatusCode();
     //statusCode = client.responseStatusCode();
     String response = client.responseBody();
-
-    Serial.print("Status code: ");
-    Serial.println(statusCode);
-    Serial.print("Response: ");
-    Serial.println(response);
+    if (IS_DEBUG) {
+      Serial.print("Status code: ");
+      Serial.println(statusCode);
+      Serial.print("Response: ");
+      Serial.println(response);
+    }
     if (statusCode == 404) {
       return false;
     }
@@ -252,7 +260,8 @@ boolean establishServer() {
   } else return false;
 }
 boolean loopStartTimes() {
-  Serial.println("GRAZIAS SENIROREN!");
+  Serial.println("Skall vi hare trevligt!");
+  if (IS_DEBUG)Serial.println("GRAZIAS SENIROREN!");
   boolean printOnce = true;
   while (true) {
     unsigned long currTime = getCurrTime();
@@ -261,7 +270,7 @@ boolean loopStartTimes() {
 
       unsigned long endT = getEndTime(startTimes[i], durations[i]);
       boolean isInInter = isInIntervall(startTimes[i], endT, currTime);
-      if (((unsigned long)(millis() - (arduinosClock + currentTime))) >= 1000 && printOnce) {
+      if (IS_DEBUG && ((unsigned long)(millis() - (arduinosClock + currentTime))) >= 1000 && printOnce) {
         Serial.println("CurrT: " + String(currTime) + ", startT: " + String(startTimes[i]) + ", endT: " + String(endT) + ", Is in intervall?:" + String(isInInter));
         Serial.println("How bout number1?");
         long tempEndMilli = getEndTime(startTimes[0], durations[0]);
@@ -291,17 +300,21 @@ boolean loopStartTimes() {
         digitalWrite(pinIds[i], LOW);
       }
     } if (((unsigned long)(millis() - (arduinosClock + currentTime))) >= httpIntervall) {
-      Serial.println("Time before: " + String(currTime));
-      Serial.println("##################################################################################################################");
+          Serial.println("LOOPING IN STARTTIMES");
+
+      if (IS_DEBUG) {
+        Serial.println("Time before: " + String(currTime));
+        Serial.println("##################################################################################################################");
+      }
       boolean shize = Relays_Dynamic();
       printOnce = true;
       if (!isDynamic || !hasStartTime) {
         return true;
       }
-      else if (!shize) return false;
-      Serial.println("******************************************************************************************************************");
+      if (!shize && (!wifiConnected || !serverConnected))return false;
+      if (IS_DEBUG) Serial.println("******************************************************************************************************************");
       currTime = getCurrTime();
-      Serial.println("Time after: " + String(currTime));
+      if (IS_DEBUG)Serial.println("Time after: " + String(currTime));
 
     }
   }
@@ -330,7 +343,7 @@ unsigned long getEndTime(unsigned long start, unsigned long duration) {
 */
 void updateArdinoClock(long offset) {
   currentTime = offset;
-  Serial.println("Will here update arduinos clock.");//TODO IN FUTURE
+  if (IS_DEBUG) Serial.println("Will here update arduinos clock."); //TODO IN FUTURE
   if (offset < 0) {
     String msg = "clock was tried to be updated when not real";
     sendErrorMessage(msg);
@@ -370,16 +383,17 @@ boolean loopDynamic() {
   byte i = 0;
   startTimesTmp[i] = millis();
   while (true) {
-    Serial.println("LOOPING");
+    Serial.println("LOOPING IN DYNAMIC");
+    if (IS_DEBUG)Serial.println("LOOPING");
 
-    if (!isDynamic) return true;
-    //if (!shize) return false;
+    if (!isDynamic || hasStartTime) return true;
     //Start of program:
     pinMode(pinIds[i], OUTPUT);
-    Serial.println("I: " + String(i) + ", gives duration: " + String(durations[i]));
-    Serial.println("I: " + String(i) + ", gives start: " + String(startTimesTmp[i]));
-    Serial.println("I: " + String(i) + ", gives runtime: " + String((millis() - startTimesTmp[i])));
-
+    if (IS_DEBUG) {
+      Serial.println("I: " + String(i) + ", gives duration: " + String(durations[i]));
+      Serial.println("I: " + String(i) + ", gives start: " + String(startTimesTmp[i]));
+      Serial.println("I: " + String(i) + ", gives runtime: " + String((millis() - startTimesTmp[i])));
+    }
     if ((millis() - startTimesTmp[i]) < durations[i]) {
       digitalWrite(pinIds[i], HIGH);
     } else {//Not initlized or duration overflow
@@ -390,16 +404,16 @@ boolean loopDynamic() {
         continue;//jump to while
         //i = numRelays;
       } else {
-        Serial.println("i+1 is: " + String(i + 1));
+        if (IS_DEBUG)   Serial.println("i+1 is: " + String(i + 1));
         startTimesTmp[i + 1] = millis();
-        Serial.println("With value: " + String(startTimesTmp[i + 1]));
+        if(IS_DEBUG)Serial.println("With value: " + String(startTimesTmp[i + 1]));
         i++;
         continue;//jump to while.
       }
     }
     delay(1000); //Should replace/refactor this logic of halting execution.....
     boolean shize = Relays_Dynamic();//TODO UNCOMMENT
-
+    if (!shize && (!wifiConnected || !serverConnected))return false;
     //But i dont have any listeners, except maybe should have a button for "axeServerForUpdate"
   }
 }
@@ -410,13 +424,13 @@ void resetStartTimes() {
 }
 
 boolean Relays_Dynamic() {
-  Serial.println("Will http for dynamic.");
+  if (IS_DEBUG)Serial.println("Will http for dynamic.");
   //Could also print the information to EEPROM to allow for more secure things (useable turning on intervall on disconnect, but that is when i create that!)
   //allows for up to 20 relays(no card have that many)
 
 
   if (client.connect(server, port)) {
-    Serial.println("connected to server");
+    if (IS_DEBUG)Serial.println("connected to server");
     client.beginRequest();
     client.get("/arduino_relay");
     client.sendHeader("Credentials: " + String(credentials));
@@ -427,19 +441,21 @@ boolean Relays_Dynamic() {
     int statusCode = client.responseStatusCode();
     //statusCode = client.responseStatusCode();
     String response = client.responseBody();
-
-    Serial.print("Status code: ");
-    Serial.println(statusCode);
-    Serial.print("Response: ");
-    Serial.println(response);
+    if (IS_DEBUG) {
+      Serial.print("Status code: ");
+      Serial.println(statusCode);
+      Serial.print("Response: ");
+      Serial.println(response);
+    }
     DynamicJsonDocument doc(2048);//Local variables are destroyed/released when exiting scope..
 
     auto error = deserializeJson(doc, response);
 
     if (error) {
-
-      Serial.print(F("deserializeJson() failed: "));
-      Serial.println(error.c_str());
+      if (IS_DEBUG) {
+        Serial.print(F("deserializeJson() failed: "));
+        Serial.println(error.c_str());
+      }
       String eMsg = "deserializeJson() failed";
       sendErrorMessage(eMsg);
       return false;
@@ -460,16 +476,16 @@ boolean Relays_Dynamic() {
     numRepeats = doc["data"]["num_repeats"];
     String bajs = doc["data"]["relays"];
     String skit = doc["data"]["relays"][2];
-
-    Serial.println("DATA length:");
-    Serial.println(skit);
-    Serial.println("DATA?:");
-    Serial.println(bajs);
-    Serial.println("Will now print the array:");
-    Serial.println(String(sizeof(doc["data"]["relays"]) / sizeof(doc["data"]["relays"][0])));
-    Serial.println(String(sizeof(doc["data"]["relays"])));
-    Serial.println(String(sizeof(doc["data"]["relays"][0])));
-
+    if (IS_DEBUG) {
+      Serial.println("DATA length:");
+      Serial.println(skit);
+      Serial.println("DATA?:");
+      Serial.println(bajs);
+      Serial.println("Will now print the array:");
+      Serial.println(String(sizeof(doc["data"]["relays"]) / sizeof(doc["data"]["relays"][0])));
+      Serial.println(String(sizeof(doc["data"]["relays"])));
+      Serial.println(String(sizeof(doc["data"]["relays"][0])));
+    }
     byte size = 0;
     for (byte i = 0; i < 20; i++) {
       //Serial.println("I: " + String(i) + ", gives:");
@@ -502,7 +518,9 @@ boolean Relays_Dynamic() {
       //isActiveArr[i = doc["data"]["relays"][i]["is_active"];//From frontend??
     }
   } else {
-    Serial.println("FAIL AT CONNECTING");
+    if (IS_DEBUG)   Serial.println("FAIL AT CONNECTING");
+    wifiConnected = false;
+    serverConnected = false;
     return false;
   }
   return true;
@@ -512,13 +530,13 @@ boolean Relays_Dynamic() {
    This sets and changes relays acording to relays..
 */
 boolean Relays_Static() {
-  Serial.println("Will http for static");
+  if (IS_DEBUG)Serial.println("Will http for static");
   //Could also print the information to EEPROM to allow for more secure things (useable turning on intervall on disconnect, but that is when i create that!)
   //allows for up to 20 relays(no card have that many)
 
 
   if (client.connect(server, port)) {
-    Serial.println("connected to server");
+    if (IS_DEBUG)Serial.println("connected to server");
     client.beginRequest();
     client.get("/arduino_relay");
     client.sendHeader("Credentials: " + String(credentials));
@@ -529,20 +547,21 @@ boolean Relays_Static() {
     int statusCode = client.responseStatusCode();
     //statusCode = client.responseStatusCode();
     String response = client.responseBody();
-
-    Serial.print("Status code: ");
-    Serial.println(statusCode);
-    Serial.print("Response: ");
-    Serial.println(response);
-
+    if (IS_DEBUG) {
+      Serial.print("Status code: ");
+      Serial.println(statusCode);
+      Serial.print("Response: ");
+      Serial.println(response);
+    }
     DynamicJsonDocument doc(2048);//Local variables are destroyed/released when exiting scope..
 
     auto error = deserializeJson(doc, response);
 
     if (error) {
-
-      Serial.print(F("deserializeJson() failed: "));
-      Serial.println(error.c_str());
+      if (IS_DEBUG) {
+        Serial.print(F("deserializeJson() failed: "));
+        Serial.println(error.c_str());
+      }
       String eMsg = "deserializeJson() failed";
       sendErrorMessage(eMsg);
       return false;
@@ -553,21 +572,21 @@ boolean Relays_Static() {
     }//ELSE:
     String bajs = doc["data"]["relays"];
     String skit = doc["data"]["relays"][2];
-
-    Serial.println("DATA length:");
-    Serial.println(skit);
-    Serial.println("DATA?:");
-    Serial.println(bajs);
-    Serial.println("Will now print the array:");
-    Serial.println(String(sizeof(doc["data"]["relays"]) / sizeof(doc["data"]["relays"][0])));
-    Serial.println(String(sizeof(doc["data"]["relays"])));
-    Serial.println(String(sizeof(doc["data"]["relays"][0])));
-
+    if (IS_DEBUG) {
+      Serial.println("DATA length:");
+      Serial.println(skit);
+      Serial.println("DATA?:");
+      Serial.println(bajs);
+      Serial.println("Will now print the array:");
+      Serial.println(String(sizeof(doc["data"]["relays"]) / sizeof(doc["data"]["relays"][0])));
+      Serial.println(String(sizeof(doc["data"]["relays"])));
+      Serial.println(String(sizeof(doc["data"]["relays"][0])));
+    }
     byte size = 0;
     for (byte i = 0; i < 20; i++) {
-      Serial.println("I: " + String(i) + ", gives:");
+      if (IS_DEBUG)     Serial.println("I: " + String(i) + ", gives:");
       String skit = doc["data"]["relays"][i];
-      Serial.println(skit);
+      if (IS_DEBUG)     Serial.println(skit);
       if (skit == "null" || i >= numRelays) {
         if (skit != "null" && i >= numRelays) {
           String msg = "Can only use: " + String(numRelays) + ", num of relays";
@@ -584,7 +603,7 @@ boolean Relays_Static() {
         sendErrorMessage(eMsg);//then just keep going....
       }
       //Serial.println("Before pin" + String(pin) + " is initilized: ");
-      Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.
+      if (IS_DEBUG)Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.
       pinIds[i] = pin;
       //pinActive
       isOnArr[i] = doc["data"]["relays"][i]["relay_is_on"];
@@ -597,11 +616,13 @@ boolean Relays_Static() {
       }
 
       //Serial.println("After pin" + String(pin) + " is initilized: ");
-      Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.
+      if (IS_DEBUG)Serial.println(digitalRead(pin)); //Reads bit pin of register PORTD which contains the current state (high/low) of pin pin.
 
     }
   } else {
-    Serial.println("FAIL AT CONNECTING");
+    if (IS_DEBUG)Serial.println("FAIL AT CONNECTING");
+    wifiConnected = false;
+    serverConnected = false;
     return false;
   }
   return true;
@@ -636,27 +657,33 @@ boolean sendErrorMessage(String msg) {
   int statusCode = client.responseStatusCode();
   //statusCode = client.responseStatusCode();
   String response = client.responseBody();
-
-  Serial.print("Status code: ");
-  Serial.println(statusCode);
-  Serial.print("Response: ");
-  Serial.println(response);
+  if (IS_DEBUG) {
+    Serial.print("Status code: ");
+    Serial.println(statusCode);
+    Serial.print("Response: ");
+    Serial.println(response);
+  }
   if (statusCode != 201)return false;
   else return true;
 }
 void printWifiStatus() {
   // print the SSID of the network you're attached to:
-  Serial.print("SSID: ");
-  Serial.println(WiFi.SSID());
+  if (IS_DEBUG) {
+    Serial.print("SSID: ");
+    Serial.println(WiFi.SSID());
+  }
 
   // print your board's IP address:
   IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
-  Serial.println(ip);
-
+  if (IS_DEBUG) {
+    Serial.print("IP Address: ");
+    Serial.println(ip);
+  }
   // print the received signal strength:
   long rssi = WiFi.RSSI();
-  Serial.print("signal strength (RSSI):");
-  Serial.print(rssi);
-  Serial.println(" dBm");
+  if (IS_DEBUG) {
+    Serial.print("signal strength (RSSI):");
+    Serial.print(rssi);
+    Serial.println(" dBm");
+  }
 }
